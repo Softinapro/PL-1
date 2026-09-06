@@ -4,23 +4,20 @@ from app.models.base import BaseModel
 import enum
 
 class PointStatus(str, enum.Enum):
-    """Статусы торговой точки."""
-    PENDING = "pending"          # Ожидает решения
-    CONFIRMED = "confirmed"      # Подтверждена водителем
-    REJECTED = "rejected"        # Отклонена водителем
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
 
 class Point(BaseModel):
-    """Модель торговой точки в составе маршрута."""
     __tablename__ = "points"
 
-    # Связь с маршрутом
-    route_id = Column(Integer, ForeignKey("routes.id"), nullable=False, index=True)
+    route_id = Column(Integer, ForeignKey("routes.id"), nullable=False, index=True, comment="Маршрут")
+    order_number = Column(Integer, nullable=False, comment="Порядковый номер")
+    address = Column(String(255), nullable=False, comment="Адрес точки")
+    status = Column(Enum(PointStatus), nullable=False, default=PointStatus.PENDING, comment="Статус")
+    rejection_reason = Column(Text, nullable=True, comment="Причина отказа")
     
-    # Данные точки
-    order_number = Column(Integer, nullable=False, comment="Порядковый номер в маршруте")
-    address = Column(String(255), nullable=False, comment="Адрес торговой точки")
-    status = Column(Enum(PointStatus), nullable=False, default=PointStatus.PENDING, comment="Статус точки")
-    rejection_reason = Column(Text, nullable=True, comment="Причина отказа (если отклонена)")
-    
-    # Отношения
     route = relationship("Route", back_populates="points")
+    
+    def __repr__(self):
+        return f"<Point #{self.id} route={self.route_id} address={self.address[:30]}>"

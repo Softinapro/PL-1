@@ -1,0 +1,11 @@
+msgid "Please confirm"
+msgstr "Пожалуйста, подтвердите"
+
+msgid "This will permanently delete"
+msgstr "Это действие безвозвратно удалит"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Delete"
+msgstr "Удалить"

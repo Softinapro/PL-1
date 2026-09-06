@@ -9,14 +9,13 @@ class UserRole(str, enum.Enum):
     DRIVER = "driver"
 
 class User(BaseModel):
-    """Модель пользователя. Может быть администратором, логистом или водителем."""
     __tablename__ = "users"
 
-    # Основная информация
     phone = Column(String(20), unique=True, nullable=False, index=True, comment="Номер телефона")
     full_name = Column(String(100), nullable=False, comment="Полное имя")
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.DRIVER, comment="Роль")
+    is_active = Column(Boolean, default=True, comment="Активен")
+    is_archived = Column(Boolean, default=False, comment="В архиве")
     
-    # Роль и статус
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.DRIVER, comment="Роль в системе")
-    is_active = Column(Boolean, default=True, comment="Активен (не заблокирован)")
-    is_archived = Column(Boolean, default=False, comment="В архиве (скрыт из списков)")
+    def __repr__(self):
+        return f"<User {self.full_name}>"
