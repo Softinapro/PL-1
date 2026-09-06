@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqladmin import Admin
 from app.config import settings
 from app.api.v1.router import router as v1_router
+from app.database import engine
+from app.admin.authentication import authentication_backend
+from app.admin.admin import admin_views
 
-# Создаем приложение FastAPI
 app = FastAPI(
     title="Logistics API",
     version="1.0.0",
@@ -11,7 +14,7 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
-# Настройка CORS
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -25,5 +28,14 @@ app.add_middleware(
 async def health_check():
     return {"status": "ok", "service": "logistics-api"}
 
-# Подключаем роутеры API
+# Подключаем API
 app.include_router(v1_router, prefix="/api/v1")
+
+# ========== НАСТРОЙКА АДМИНКИ SQLADMIN ==========
+admin = Admin(app, engine, authentication_backend=authentication_backend)
+
+# Регистрируем все модели
+for view in admin_views:
+    admin.add_view(view)  # <--- ИЗМЕНЕНО: add_view
+
+# Админка автоматически доступна по /admin
