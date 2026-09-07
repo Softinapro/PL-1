@@ -39,3 +39,6 @@ for view in admin_views:
     admin.add_view(view)  # <--- ИЗМЕНЕНО: add_view
 
 # Админка автоматически доступна по /admin
+# Добавляем webhook роутер отдельно (без префикса /api/v1)
+from app.api.v1.endpoints.webhook import router as webhook_router
+app.include_router(webhook_router)
