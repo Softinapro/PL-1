@@ -16,6 +16,7 @@ class User(BaseModel):
     role = Column(Enum(UserRole), nullable=False, default=UserRole.DRIVER, comment="Роль")
     is_active = Column(Boolean, default=True, comment="Активен")
     is_archived = Column(Boolean, default=False, comment="В архиве")
+    max_user_id = Column(String(100), unique=True, nullable=True, comment="ID пользователя в MAX")
     
     def __repr__(self):
         return f"<User {self.full_name}>"
