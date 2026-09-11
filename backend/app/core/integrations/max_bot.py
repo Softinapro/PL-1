@@ -3,8 +3,8 @@ from app.config import settings
 
 class MaxBotAPI:
     def __init__(self):
-        self.token = settings.MAX_BOT_TOKEN
-        self.base_url = "https://api.max.ru/bot"
+        self.token = settings.MAX_BOT_TOKEN        
+        self.base_url = "https://platform-api2.max.ru/bot"
     
     async def send_message(self, user_id: str, text: str) -> dict:
         """Отправить сообщение пользователю MAX"""
