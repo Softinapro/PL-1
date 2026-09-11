@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шпаргалка по проекту Logistics</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #e6edf3;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #58a6ff;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        h2 {
+            color: #f0883e;
+            margin-top: 30px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #7ee787;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            background: #161b22;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #30363d;
+        }
+
+        .cmd-wrapper {
+            display: flex;
+            align-items: stretch;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+            background: #0d1117;
+            border-left: 4px solid #58a6ff;
+        }
+
+        .cmd {
+            flex: 1;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e6edf3;
+            background: transparent;
+            border: none;
+            outline: none;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .cmd-btn {
+            background: #21262d;
+            border: none;
+            border-left: 1px solid #30363d;
+            color: #8b949e;
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 0 6px 6px 0;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            min-width: 70px;
+            justify-content: center;
+        }
+
+        .cmd-btn:hover {
+            background: #30363d;
+            color: #e6edf3;
+        }
+
+        .cmd-btn.copied {
+            background: #238636;
+            color: #fff;
+        }
+
+        .cmd-label {
+            color: #8b949e;
+            font-size: 13px;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+
+        .output {
+            background: #0d1117;
+            border-left: 4px solid #7ee787;
+            padding: 12px 16px;
+            margin: 10px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            border-radius: 0 6px 6px 0;
+            color: #8b949e;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #238636;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        .badge-warn {
+            background: #d29922;
+        }
+
+        .badge-danger {
+            background: #da3633;
+        }
+
+        .badge-info {
+            background: #1f6feb;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background: #30363d;
+            margin: 30px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        th {
+            background: #21262d;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #30363d;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #30363d;
+        }
+
+        .error-table td:first-child {
+            color: #f85149;
+            font-weight: 600;
+        }
+
+        .error-table td:last-child {
+            color: #7ee787;
+        }
+
+        .note {
+            background: #1f2937;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #f0883e;
+            font-size: 14px;
+        }
+
+        .note code {
+            background: #0d1117;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        ul,
+        ol {
+            font-size: 14px;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .container {
+                background: #f6f8fa;
+                border-color: #d0d7de;
+            }
+
+            .cmd-wrapper {
+                background: #f6f8fa;
+                border-left-color: #0969da;
+            }
+
+            .cmd {
+                color: #24292f;
+            }
+
+            .cmd-btn {
+                background: #eaeef2;
+                color: #24292f;
+            }
+
+            .cmd-btn:hover {
+                background: #d0d7de;
+            }
+
+            .output {
+                background: #f6f8fa;
+                border-left-color: #2da44e;
+                color: #57606a;
+            }
+
+            .note {
+                background: #fff8e6;
+                border-left-color: #d29922;
+            }
+
+            h1 {
+                color: #0969da;
+            }
+
+            h2 {
+                color: #cf7d2e;
+            }
+
+            h3 {
+                color: #1a7f37;
+            }
+
+            table th {
+                background: #f0f2f5;
+            }
+
+            .cmd-btn {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .cmd-wrapper {
+                flex-wrap: wrap;
+            }
+
+            .cmd-btn {
+                width: 100%;
+                border-radius: 0 0 6px 6px;
+                border-left: none;
+                border-top: 1px solid #30363d;
+                padding: 8px;
+                min-height: 36px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🚀 Шпаргалка по проекту</h1>
+    <p><strong>Проект:</strong> Логистика для водителей (FastAPI + MAX + Docker)</p>
+    <p><strong>Путь:</strong> <code>~/projects/PL-1</code></p>
+    <p><strong>Админка:</strong> <code>http://localhost:8000/admin</code> | <strong>Логин:</strong> admin /
+        <strong>Пароль:</strong> admin</p>
+
+    <hr>
+
+    <!-- ============================================================ -->
+    <h2>🚀 Запуск проекта</h2>
+    <div class="container">
+        <h3>1. Перейти в папку проекта</h3>
+        <div class="cmd-label">cd ~/projects/PL-1</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>cd ~/projects/PL-1</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Запустить контейнеры</h3>
+        <div class="cmd-label">docker compose up -d</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose up -d</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Проверить, что всё запустилось</h3>
+        <div class="cmd-label">docker compose ps</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Проверить, что бэкенд отвечает</h3>
+        <div class="cmd-label">curl http://localhost:8000/health</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl http://localhost:8000/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok","service":"logistics-api"}</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🌐 Туннель CloudPub</h2>
+    <div class="container">
+        <h3>1. Запустить туннель</h3>
+        <div class="cmd-label">~/clo publish http host.docker.internal:8000</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo publish http host.docker.internal:8000</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="cmd-label" style="color:#8b949e;"># Новый адрес появится в выводе, например:
+            https://winsomely-reassuring-hen.cloudpub.ru</div>
+
+        <h3>2. Проверить, что туннель работает</h3>
+        <div class="cmd-label">curl https://&lt;ТВОЙ_АДРЕС&gt;.cloudpub.ru/health</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl https://&lt;ТВОЙ_АДРЕС&gt;.cloudpub.ru/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok","service":"logistics-api"}</div>
+
+        <h3>3. Посмотреть активные туннели</h3>
+        <div class="cmd-label">~/clo ls</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo ls</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Остановить туннель</h3>
+        <div class="cmd-label">~/clo stop &amp;&amp; ~/clo clean</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo stop &amp;&amp; ~/clo clean</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <div class="note">
+            <span class="badge badge-info">Подсказка</span>
+            Если туннель не работает через localhost, используй IP-адрес WSL:
+            <br><code>hostname -I | awk '{print $1}'</code> → затем <code>~/clo publish http &lt;IP&gt;:8000</code>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔗 Регистрация вебхука в MAX</h2>
+    <div class="container">
+        <h3>1. Зарегистрировать вебхук</h3>
+        <div class="cmd-label">POST /subscriptions</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X POST "https://platform-api2.max.ru/subscriptions" \
+                -H "Authorization: f9LHodD0cOJ4Rv3_tc09V-sKVFMlfMaJjG2KY8ibVgfkBXZpTtNIuXNV1fLagB_kRXH-bcvRVU1v1zPPzeEQ"
+                \
+                -H "Content-Type: application/json" \
+                -d '{"url": "https://&lt;ТВОЙ_АДРЕС&gt;.cloudpub.ru/webhook", "update_types": ["message_created",
+                "bot_started"]}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Проверить, что подписка активна</h3>
+        <div class="cmd-label">GET /subscriptions</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X GET "https://platform-api2.max.ru/subscriptions" \
+                -H "Authorization: f9LHodD0cOJ4Rv3_tc09V-sKVFMlfMaJjG2KY8ibVgfkBXZpTtNIuXNV1fLagB_kRXH-bcvRVU1v1zPPzeEQ"
+            </div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"subscriptions":[{"url":"https://&lt;ТВОЙ_АДРЕС&gt;.cloudpub.ru/webhook",...}]}</div>
+
+        <div class="note">
+            <span class="badge badge-info">Подсказка</span>
+            Токен бота уже вшит в команды. Менять не нужно.
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔍 Проверка состояния</h2>
+    <div class="container">
+        <h3>1. Статус контейнеров</h3>
+        <div class="cmd-label">docker compose ps</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Healthcheck бэкенда</h3>
+        <div class="cmd-label">curl http://localhost:8000/health</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl http://localhost:8000/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Проверка вебхука (локально)</h3>
+        <div class="cmd-label">POST /webhook</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X POST "http://localhost:8000/webhook" -H "Content-Type: application/json"
+                -d '{"test": "hello"}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok"}</div>
+
+        <h3>4. Проверка вебхука через туннель</h3>
+        <div class="cmd-label">POST /webhook через туннель</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X POST "https://&lt;ТВОЙ_АДРЕС&gt;.cloudpub.ru/webhook" -H "Content-Type:
+                application/json" -d '{"test": "hello"}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok"}</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📜 Просмотр логов</h2>
+    <div class="container">
+        <h3>1. Логи бэкенда (в реальном времени)</h3>
+        <div class="cmd-label">docker compose logs backend -f</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend -f</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Логи бэкенда (последние 50 строк)</h3>
+        <div class="cmd-label">docker compose logs backend --tail 50</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend --tail 50</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Логи всех контейнеров</h3>
+        <div class="cmd-label">docker compose logs -f</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs -f</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Логи с фильтром по ошибкам</h3>
+        <div class="cmd-label">docker compose logs backend | grep -i error</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend | grep -i error</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>5. Сохранить логи в файл</h3>
+        <div class="cmd-label">docker compose logs backend --tail 100 &gt; logs_$(date +%Y-%m-%d_%H-%M).txt</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend --tail 100 &gt; logs_$(date +%Y-%m-%d_%H-%M).txt</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔄 Перезапуск и остановка</h2>
+    <div class="container">
+        <h3>1. Перезапустить бэкенд</h3>
+        <div class="cmd-label">docker compose restart backend</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose restart backend</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Перезапустить все контейнеры</h3>
+        <div class="cmd-label">docker compose restart</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose restart</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Остановить все контейнеры</h3>
+        <div class="cmd-label">docker compose down</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose down</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Пересобрать контейнер с очисткой кеша</h3>
+        <div class="cmd-label">docker compose down<br>docker rmi pl-1-backend<br>docker compose up -d --build</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose down &amp;&amp; docker rmi pl-1-backend &amp;&amp; docker compose
+                up -d --build</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <div class="note">
+            <span class="badge badge-warn">Важно</span>
+            Если после пересборки ошибка <code>No module named 'app'</code> — проверь Dockerfile (должна быть строка
+            <code>COPY . .</code>).
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📦 Работа с Git</h2>
+    <div class="container">
+        <h3>1. Проверить статус</h3>
+        <div class="cmd-label">git status</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git status</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Добавить изменения</h3>
+        <div class="cmd-label">git add .</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git add .</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Создать коммит</h3>
+        <div class="cmd-label">git commit -m "описание изменений"</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git commit -m "описание изменений"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Отправить на GitHub</h3>
+        <div class="cmd-label">git push</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git push</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>⚡ Быстрые команды</h2>
+    <div class="container">
+        <h3>Полный запуск проекта</h3>
+        <div class="cmd-label">cd ~/projects/PL-1 &amp;&amp; docker compose up -d &amp;&amp; curl
+            http://localhost:8000/health</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>cd ~/projects/PL-1 &amp;&amp; docker compose up -d &amp;&amp; curl
+                http://localhost:8000/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>Запуск туннеля</h3>
+        <div class="cmd-label">~/clo publish http host.docker.internal:8000</div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo publish http host.docker.internal:8000</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>Проверка всего сразу</h3>
+        <div class="cmd-label">docker compose ps &amp;&amp; curl -s http://localhost:8000/health &amp;&amp; ~/clo ls
+        </div>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps &amp;&amp; curl -s http://localhost:8000/health &amp;&amp; ~/clo
+                ls</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🆘 Частые ошибки и решения</h2>
+    <div class="container">
+        <table class="error-table">
+            <tr>
+                <th>Ошибка</th>
+                <th>Решение</th>
+            </tr>
+            <tr>
+                <td><code>Connection reset by peer</code></td>
+                <td>Смотреть логи: <code>docker compose logs backend --tail 50</code></td>
+            </tr>
+            <tr>
+                <td><code>No module named 'app'</code></td>
+                <td>Пересобрать контейнер: <code>docker compose up -d --build</code></td>
+            </tr>
+            <tr>
+                <td><code>503 Service Unavailable</code></td>
+                <td>Перезапустить туннель:
+                    <code>~/clo stop &amp;&amp; ~/clo clean &amp;&amp; ~/clo publish http host.docker.internal:8000</code>
+                </td>
+            </tr>
+            <tr>
+                <td><code>Could not resolve host: github.com</code></td>
+                <td>Перезапустить WSL: в PowerShell выполнить <code>wsl --shutdown</code></td>
+            </tr>
+            <tr>
+                <td><code>service "backend" is not running</code></td>
+                <td>Запустить контейнеры: <code>docker compose up -d</code></td>
+            </tr>
+            <tr>
+                <td><code>ModuleNotFoundError: No module named 'maxo'</code></td>
+                <td>Удалить <code>maxo</code> из requirements.txt и пересобрать</td>
+            </tr>
+            <tr>
+                <td><code>invalid input value for enum userrole</code></td>
+                <td>Использовать значения в верхнем регистре: <code>ADMIN</code>, <code>LOGIST</code>,
+                    <code>DRIVER</code></td>
+            </tr>
+            <tr>
+                <td><code>No config file 'alembic.ini' found</code></td>
+                <td>Инициализировать Alembic: <code>alembic init alembic</code> внутри контейнера</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📝 Важные заметки</h2>
+    <div class="container">
+        <ul>
+            <li><strong>Туннель:</strong> Заменяй <code>&lt;ТВОЙ_АДРЕС&gt;</code> на актуальный адрес (например:
+                <code>winsomely-reassuring-hen</code>)</li>
+            <li><strong>Токен бота MAX:</strong> Уже вшит в команды, менять не нужно</li>
+            <li><strong>Админка:</strong> <code>http://localhost:8000/admin</code> — логин: <code>admin</code>, пароль:
+                <code>admin</code></li>
+            <li><strong>База данных:</strong> PostgreSQL 17 на порту 5432, логин: <code>logistics_user</code>, пароль:
+                <code>secure_password</code></li>
+            <li><strong>Redis:</strong> Порт 6379</li>
+            <li><strong>Документация API:</strong> <code>http://localhost:8000/docs</code></li>
+            <li><strong>Healthcheck:</strong> <code>http://localhost:8000/health</code></li>
+        </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📋 Полезные ссылки</h2>
+    <div class="container">
+        <ul>
+            <li><strong>Админка:</strong> <a href="http://localhost:8000/admin"
+                    style="color: #58a6ff;">http://localhost:8000/admin</a></li>
+            <li><strong>Документация API:</strong> <a href="http://localhost:8000/docs"
+                    style="color: #58a6ff;">http://localhost:8000/docs</a></li>
+            <li><strong>Healthcheck:</strong> <a href="http://localhost:8000/health"
+                    style="color: #58a6ff;">http://localhost:8000/health</a></li>
+            <li><strong>GitHub репозиторий:</strong> <a href="https://github.com/Softinapro/PL-1"
+                    style="color: #58a6ff;">https://github.com/Softinapro/PL-1</a></li>
+        </ul>
+    </div>
+
+    <hr>
+    <p style="color: #8b949e; text-align: center; font-size: 13px;">
+        Шпаргалка по проекту Logistics — FastAPI + MAX + Docker<br>
+        Сохранена: <span id="date"></span>
+    </p>
+
+    <script>
+        // Устанавливаем дату
+        document.getElementById('date').textContent = new Date().toLocaleString('ru-RU');
+
+        // Функция копирования с обратной связью
+        function copyCmd(btn) {
+            const wrapper = btn.closest('.cmd-wrapper');
+            const cmdElement = wrapper.querySelector('.cmd');
+            const text = cmdElement.textContent.trim();
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.textContent = '✅ Скопировано';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = '📋 Копировать';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(() => {
+                    fallbackCopy(text, btn);
+                });
+            } else {
+                fallbackCopy(text, btn);
+            }
+        }
+
+        function fallbackCopy(text, btn) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                btn.textContent = '✅ Скопировано';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Копировать';
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (e) {
+                alert('Не удалось скопировать. Выделите команду вручную.');
+            }
+            document.body.removeChild(textarea);
+        }
+    </script>
+
+</body>
+
+</html>
