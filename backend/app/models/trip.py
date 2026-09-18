@@ -14,10 +14,11 @@ class Trip(BaseModel):
     __tablename__ = "trips"
 
     driver_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="Водитель")
-    logist_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="Логист")
+    logist_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True, comment="Логист")
     date = Column(Date, nullable=False, index=True, comment="Дата рейса")
     status = Column(Enum(TripStatus), nullable=False, default=TripStatus.PENDING, comment="Статус")
     sent_at = Column(DateTime, nullable=True, comment="Отправлено в MAX")
+    info = Column(String(300), nullable=True, comment="Произвольная информация")
     
     driver = relationship("User", foreign_keys=[driver_id], backref="trips_as_driver")
     logist = relationship("User", foreign_keys=[logist_id], backref="trips_as_logist")

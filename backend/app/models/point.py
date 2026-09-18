@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Text, Numeric
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 import enum
@@ -14,6 +14,7 @@ class Point(BaseModel):
     route_id = Column(Integer, ForeignKey("routes.id"), nullable=False, index=True, comment="Маршрут")
     order_number = Column(Integer, nullable=False, comment="Порядковый номер")
     address = Column(String(255), nullable=False, comment="Адрес точки")
+    weight = Column(Numeric(10, 3), nullable=True, comment="Вес товара, кг")
     status = Column(Enum(PointStatus), nullable=False, default=PointStatus.PENDING, comment="Статус")
     rejection_reason = Column(Text, nullable=True, comment="Причина отказа")
     

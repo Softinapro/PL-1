@@ -9,6 +9,7 @@ from app.models.point import Point, PointStatus
 from app.api.v1.deps.auth import get_current_user, require_role
 from pydantic import BaseModel
 from datetime import date
+from decimal import Decimal
 from typing import List, Optional
 
 router = APIRouter(prefix="/import", tags=["Import"])
@@ -18,17 +19,22 @@ router = APIRouter(prefix="/import", tags=["Import"])
 class PointImportSchema(BaseModel):
     order_number: int
     address: str
+    weight: Optional[Decimal] = None       # ← новое: вес, кг
+
 
 class RouteImportSchema(BaseModel):
     order_number: int
+    name: Optional[str] = None             # ← новое: название маршрута
     address_start: str
     address_end: str
     points: List[PointImportSchema]
+
 
 class TripImportSchema(BaseModel):
     driver_phone: str
     logist_phone: str
     date: date
+    info: Optional[str] = None             # ← новое: произвольный текст
     routes: List[RouteImportSchema]
 
 
@@ -94,6 +100,7 @@ async def import_trips(
                 logist_id=logist.id,
                 date=trip_data.date,
                 status=TripStatus.PENDING,
+                info=trip_data.info,                   # ← новое
             )
             db.add(trip)
             await db.flush()
@@ -103,6 +110,7 @@ async def import_trips(
                 route = Route(
                     trip_id=trip.id,
                     order_number=route_data.order_number,
+                    name=route_data.name,              # ← новое
                     address_start=route_data.address_start,
                     address_end=route_data.address_end,
                     status=RouteStatus.PENDING,
@@ -116,6 +124,7 @@ async def import_trips(
                         route_id=route.id,
                         order_number=point_data.order_number,
                         address=point_data.address,
+                        weight=point_data.weight,      # ← новое
                         status=PointStatus.PENDING,
                     )
                     db.add(point)

@@ -13,6 +13,7 @@ class User(BaseModel):
 
     phone = Column(String(20), unique=True, nullable=False, index=True, comment="Номер телефона")
     full_name = Column(String(100), nullable=False, comment="Полное имя")
+    code = Column(String(10), unique=True, nullable=True, index=True, comment="Код из 1С (справочник Физические лица)")
     role = Column(Enum(UserRole), nullable=False, default=UserRole.DRIVER, comment="Роль")
     is_active = Column(Boolean, default=True, comment="Активен")
     is_archived = Column(Boolean, default=False, comment="В архиве")

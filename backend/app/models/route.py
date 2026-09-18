@@ -13,6 +13,7 @@ class Route(BaseModel):
 
     trip_id = Column(Integer, ForeignKey("trips.id"), nullable=False, index=True, comment="Рейс")
     order_number = Column(Integer, nullable=False, comment="Порядковый номер")
+    name = Column(String(255), nullable=True, comment="Название маршрута (из 1С)")
     status = Column(Enum(RouteStatus), nullable=False, default=RouteStatus.PENDING, comment="Статус")
     rejection_reason = Column(Text, nullable=True, comment="Причина отказа")
     address_start = Column(String(255), nullable=False, comment="Адрес начала")

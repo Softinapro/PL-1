@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     MAX_BOT_TOKEN: str
     MAX_BOT_NAME: str
     
+    # 1C Integration
+    IMPORT_API_KEY: str
+    
     # Application
     DEBUG: bool = False
     CORS_ORIGINS: List[str] = ["*"]
