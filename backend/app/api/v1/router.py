@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, me, driver, import_trips, import_drivers, webhook
+from app.api.v1.endpoints import auth, me, driver, import_trips, import_drivers, export_trips, webhook
 
 router = APIRouter()
 
@@ -8,6 +8,7 @@ router.include_router(me.router)
 router.include_router(driver.router)
 router.include_router(import_trips.router)
 router.include_router(import_drivers.router)
+router.include_router(export_trips.router)
 router.include_router(webhook.router)
 
 @router.get("/ping")

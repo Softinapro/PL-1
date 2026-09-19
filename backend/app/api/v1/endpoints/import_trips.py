@@ -51,6 +51,7 @@ async def import_trips(
     """
     Импорт рейсов из 1С.
     Ожидает список рейсов с маршрутами и точками.
+    Если рейс на дату уже есть — затирает старый.
     """
     results = []
     errors = []
@@ -71,20 +72,18 @@ async def import_trips(
 
             # 2. Логист не ищется в User — только фиксируем код из 1С
 
-            # 3. Проверяем, есть ли уже рейс на эту дату
-            existing_trip = await db.execute(
+            # 3. Если рейс на эту дату уже есть — УДАЛЯЕМ (затираем)
+            existing_trip_result = await db.execute(
                 select(Trip).where(
                     Trip.driver_id == driver.id,
                     Trip.date == trip_data.date
                 )
             )
-            if existing_trip.scalar_one_or_none():
-                errors.append({
-                    "driver_code": trip_data.driver_code,
-                    "date": trip_data.date.isoformat(),
-                    "error": "Рейс на эту дату уже существует"
-                })
-                continue
+            existing_trip = existing_trip_result.scalar_one_or_none()
+            if existing_trip:
+                # Cascade удалит Route и Point
+                await db.delete(existing_trip)
+                await db.flush()
 
             # 4. Создаём рейс
             trip = Trip(
@@ -124,6 +123,8 @@ async def import_trips(
                     )
                     db.add(point)
 
+            # 7. Коммитим ВСЁ для этого Trip
+            await db.commit()
             results.append({
                 "driver_code": trip_data.driver_code,
                 "date": trip_data.date.isoformat(),
@@ -133,12 +134,11 @@ async def import_trips(
             })
 
         except Exception as e:
+            await db.rollback()
             errors.append({
                 "driver_code": trip_data.driver_code,
                 "error": str(e)
             })
-
-    await db.commit()
 
     return {
         "status": "completed",
