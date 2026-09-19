@@ -1,3 +1,5 @@
+from fastapi import Header
+from app.config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,3 +59,15 @@ def require_role(required_role: str):
             )
         return current_user
     return role_checker
+
+async def verify_api_key(x_api_key: str = Header(..., alias="X-API-Key")):
+    """
+    Проверяет API-ключ для запросов от 1С.
+    Используется в эндпоинтах, вызываемых из 1С.
+    """
+    if x_api_key != settings.IMPORT_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+    return True

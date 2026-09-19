@@ -6,7 +6,7 @@ from app.models.user import User
 from app.models.trip import Trip, TripStatus
 from app.models.route import Route, RouteStatus
 from app.models.point import Point, PointStatus
-from app.api.v1.deps.auth import get_current_user, require_role
+from app.api.v1.deps.auth import verify_api_key
 from pydantic import BaseModel
 from datetime import date
 from decimal import Decimal
@@ -14,27 +14,29 @@ from typing import List, Optional
 
 router = APIRouter(prefix="/import", tags=["Import"])
 
+
 # ========== СХЕМЫ ДЛЯ ВХОДНЫХ ДАННЫХ ==========
 
 class PointImportSchema(BaseModel):
+    code: str                              # код точки из 1С
     order_number: int
     address: str
-    weight: Optional[Decimal] = None       # ← новое: вес, кг
+    weight: Optional[Decimal] = None       # вес, кг
 
 
 class RouteImportSchema(BaseModel):
     order_number: int
-    name: Optional[str] = None             # ← новое: название маршрута
+    name: Optional[str] = None
     address_start: str
     address_end: str
     points: List[PointImportSchema]
 
 
 class TripImportSchema(BaseModel):
-    driver_phone: str
-    logist_phone: str
+    driver_code: str                       # код водителя (физлицо)
+    logist_code: Optional[str] = None      # код логиста (пользователи), необязателен
     date: date
-    info: Optional[str] = None             # ← новое: произвольный текст
+    info: Optional[str] = None
     routes: List[RouteImportSchema]
 
 
@@ -43,7 +45,7 @@ class TripImportSchema(BaseModel):
 @router.post("/trips")
 async def import_trips(
     trips_data: List[TripImportSchema],
-    current_user: User = Depends(require_role("admin")),
+    _: bool = Depends(verify_api_key),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -55,29 +57,19 @@ async def import_trips(
 
     for trip_data in trips_data:
         try:
-            # 1. Находим водителя по телефону
+            # 1. Находим водителя по коду
             driver_result = await db.execute(
-                select(User).where(User.phone == trip_data.driver_phone)
+                select(User).where(User.code == trip_data.driver_code)
             )
             driver = driver_result.scalar_one_or_none()
             if not driver:
                 errors.append({
-                    "driver_phone": trip_data.driver_phone,
+                    "driver_code": trip_data.driver_code,
                     "error": "Водитель не найден"
                 })
                 continue
 
-            # 2. Находим логиста по телефону
-            logist_result = await db.execute(
-                select(User).where(User.phone == trip_data.logist_phone)
-            )
-            logist = logist_result.scalar_one_or_none()
-            if not logist:
-                errors.append({
-                    "logist_phone": trip_data.logist_phone,
-                    "error": "Логист не найден"
-                })
-                continue
+            # 2. Логист не ищется в User — только фиксируем код из 1С
 
             # 3. Проверяем, есть ли уже рейс на эту дату
             existing_trip = await db.execute(
@@ -88,7 +80,7 @@ async def import_trips(
             )
             if existing_trip.scalar_one_or_none():
                 errors.append({
-                    "driver_phone": trip_data.driver_phone,
+                    "driver_code": trip_data.driver_code,
                     "date": trip_data.date.isoformat(),
                     "error": "Рейс на эту дату уже существует"
                 })
@@ -97,10 +89,11 @@ async def import_trips(
             # 4. Создаём рейс
             trip = Trip(
                 driver_id=driver.id,
-                logist_id=logist.id,
+                logist_id=None,                          # ← всегда None (пока)
+                logist_code=trip_data.logist_code,       # ← код из 1С
                 date=trip_data.date,
                 status=TripStatus.PENDING,
-                info=trip_data.info,                   # ← новое
+                info=trip_data.info,
             )
             db.add(trip)
             await db.flush()
@@ -110,7 +103,7 @@ async def import_trips(
                 route = Route(
                     trip_id=trip.id,
                     order_number=route_data.order_number,
-                    name=route_data.name,              # ← новое
+                    name=route_data.name,
                     address_start=route_data.address_start,
                     address_end=route_data.address_end,
                     status=RouteStatus.PENDING,
@@ -122,15 +115,17 @@ async def import_trips(
                 for point_data in route_data.points:
                     point = Point(
                         route_id=route.id,
+                        code=point_data.code,
+                        date=trip_data.date,
                         order_number=point_data.order_number,
                         address=point_data.address,
-                        weight=point_data.weight,      # ← новое
+                        weight=point_data.weight,
                         status=PointStatus.PENDING,
                     )
                     db.add(point)
 
             results.append({
-                "driver_phone": trip_data.driver_phone,
+                "driver_code": trip_data.driver_code,
                 "date": trip_data.date.isoformat(),
                 "status": "created",
                 "trip_id": trip.id,
@@ -139,7 +134,7 @@ async def import_trips(
 
         except Exception as e:
             errors.append({
-                "driver_phone": trip_data.driver_phone,
+                "driver_code": trip_data.driver_code,
                 "error": str(e)
             })
 

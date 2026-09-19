@@ -15,6 +15,7 @@ class Trip(BaseModel):
 
     driver_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="Водитель")
     logist_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True, comment="Логист")
+    logist_code = Column(String(10), nullable=True, index=True, comment="Код логиста из 1С (справочник Пользователи)")
     date = Column(Date, nullable=False, index=True, comment="Дата рейса")
     status = Column(Enum(TripStatus), nullable=False, default=TripStatus.PENDING, comment="Статус")
     sent_at = Column(DateTime, nullable=True, comment="Отправлено в MAX")
