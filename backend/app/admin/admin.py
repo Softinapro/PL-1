@@ -1,6 +1,7 @@
 from sqladmin import ModelView
 from app.models import (
-    User, DriverProfile, Trip, Route, Point, MaxWebhookLog
+    User, DriverProfile, Trip, Route, Point, MaxWebhookLog,
+    RejectionReason, RejectionScope,
 )
 
 # ========== ПОЛЬЗОВАТЕЛИ ==========
@@ -189,6 +190,43 @@ class PointAdmin(ModelView, model=Point):
     name_plural = "Торговые точки"
     icon = "fa-solid fa-location-dot"
 
+# ========== ПРИЧИНЫ ОТКАЗА ==========
+class RejectionReasonAdmin(ModelView, model=RejectionReason):
+    column_list = [
+        RejectionReason.id,
+        RejectionReason.scope,
+        RejectionReason.text,
+        RejectionReason.is_active,
+        RejectionReason.created_at,
+        RejectionReason.updated_at,
+    ]
+    column_labels = {
+        RejectionReason.id: "ID",
+        RejectionReason.scope: "Уровень",
+        RejectionReason.text: "Текст причины",
+        RejectionReason.is_active: "Активна",
+        RejectionReason.created_at: "Дата создания",
+        RejectionReason.updated_at: "Дата обновления",
+    }
+    column_choices = {
+        RejectionReason.scope: [
+            (RejectionScope.TRIP, "🚛 Рейс (отказ от всего)"),
+            (RejectionScope.ROUTE, "🛣 Маршрут"),
+            (RejectionScope.POINT, "📍 Точка"),
+        ],
+        RejectionReason.is_active: [
+            (True, "✅ Да"),
+            (False, "❌ Нет"),
+        ],
+    }
+    column_searchable_list = [RejectionReason.text]
+    column_filters = [RejectionReason.scope, RejectionReason.is_active]
+    column_sortable_list = [RejectionReason.id, RejectionReason.scope, RejectionReason.created_at]
+    column_default_sort = [(RejectionReason.scope, False), (RejectionReason.id, False)]
+    name = "Причина отказа"
+    name_plural = "Причины отказа"
+    icon = "fa-solid fa-circle-xmark"
+
 # ========== ЛОГИ MAX ==========
 class MaxWebhookLogAdmin(ModelView, model=MaxWebhookLog):
     column_list = [
@@ -228,5 +266,6 @@ admin_views = [
     TripAdmin,
     RouteAdmin,
     PointAdmin,
+    RejectionReasonAdmin,
     MaxWebhookLogAdmin,
 ]

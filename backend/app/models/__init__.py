@@ -4,6 +4,7 @@ from app.models.driver_profile import DriverProfile
 from app.models.trip import Trip, TripStatus
 from app.models.route import Route, RouteStatus
 from app.models.point import Point, PointStatus
+from app.models.rejection_reason import RejectionReason, RejectionScope
 from app.models.max_webhook_log import MaxWebhookLog
 
 __all__ = [
@@ -17,5 +18,7 @@ __all__ = [
     "RouteStatus",
     "Point",
     "PointStatus",
+    "RejectionReason",
+    "RejectionScope",
     "MaxWebhookLog",
 ]
