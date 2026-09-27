@@ -52,3 +52,17 @@ class MaxBotAPI:
         )
 
         return await self.send_message(user_id, text)
+
+    async def send_revoked_notification(
+        self,
+        user_id: str,
+        trip_date: str,
+    ) -> dict:
+        """Отправить уведомление об отзыве рейса."""
+        text = (
+            f"🚫 <b>Рейс на {trip_date} отозван логистом.</b>\n"
+            f"\n"
+            f"Если есть вопросы — свяжитесь с логистом."
+        )
+
+        return await self.send_message(user_id, text)
