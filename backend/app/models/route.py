@@ -16,9 +16,7 @@ class Route(BaseModel):
     name = Column(String(255), nullable=True, comment="Название маршрута (из 1С)")
     status = Column(Enum(RouteStatus), nullable=False, default=RouteStatus.PENDING, comment="Статус")
     rejection_reason = Column(Text, nullable=True, comment="Причина отказа")
-    address_start = Column(String(255), nullable=False, comment="Адрес начала")
-    address_end = Column(String(255), nullable=False, comment="Адрес конца")
-    
+        
     trip = relationship("Trip", back_populates="routes")
     points = relationship("Point", back_populates="route", cascade="all, delete-orphan")
     
