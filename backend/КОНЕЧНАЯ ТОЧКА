@@ -1,0 +1,339 @@
+# 📋 ШПАРГАЛКА: ДОБАВЛЕНИЕ ЭНДПОИНТА В PL-1
+
+**Дата:** 04.10.2026
+**Назначение:** быстрая инструкция «как добавить новый эндпоинт»
+
+---
+
+## 1. ТИП ЭНДПОИНТА
+
+| Тип | Авторизация | Префикс | Пример |
+|---|---|---|---|
+| Для 1С | X-API-Key | `/api/v1/...` | `/import/trips` |
+| Для водителей (бот/веб) | JWT | `/api/v1/...` | `/me/trips` |
+| Вебхук MAX | нет | без префикса | `/webhook` |
+| Служебный | нет | без или `/api/v1` | `/health`, `/ping` |
+
+---
+
+## 2. СОЗДАЙ ФАЙЛ
+
+**Путь:** `backend/app/api/v1/endpoints/<имя>.py`
+
+**Минимальный шаблон:**
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.api.v1.deps.auth import verify_api_key
+
+router = APIRouter(prefix="/<префикс>", tags=["<Тег>"])
+
+
+@router.post("/<путь>")
+async def my_endpoint(
+    _: bool = Depends(verify_api_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Краткое описание — попадёт в /docs."""
+    return {"status": "ok"}
+```
+
+---
+
+## 3. ЗАВИСИМОСТИ
+
+### Для 1С
+```python
+from app.api.v1.deps.auth import verify_api_key
+_: bool = Depends(verify_api_key),
+```
+
+### Для водителя (JWT)
+```python
+from app.api.v1.deps.auth import get_current_user
+from app.models.user import User
+current_user: User = Depends(get_current_user),
+```
+
+### Для БД — всегда
+```python
+from app.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+db: AsyncSession = Depends(get_db),
+```
+
+---
+
+## 4. PYDANTIC-СХЕМЫ (если тело)
+
+В том же файле, над эндпоинтом:
+
+```python
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import date
+from decimal import Decimal
+
+class ItemSchema(BaseModel):
+    code: str
+    order_number: int
+    weight: Optional[Decimal] = None
+
+class RequestSchema(BaseModel):
+    date: date
+    items: List[ItemSchema]
+```
+
+Эндпоинт:
+```python
+async def my_endpoint(request: RequestSchema, ...):
+```
+
+---
+
+## 5. РАБОТА С БД
+
+```python
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from app.models.trip import Trip
+
+# SELECT
+result = await db.execute(select(Trip).where(Trip.id == 5))
+trip = result.scalar_one_or_none()
+
+# SELECT со связями
+result = await db.execute(
+    select(Trip)
+    .where(Trip.date == date)
+    .options(selectinload(Trip.routes).selectinload(Route.points))
+)
+trips = result.scalars().all()
+
+# INSERT
+obj = Trip(driver_id=1, date=date, status=TripStatus.PENDING)
+db.add(obj)
+await db.flush()    # получить obj.id
+await db.commit()   # зафиксировать
+
+# DELETE
+await db.delete(trip)
+await db.commit()
+
+# UPDATE
+trip.status = TripStatus.CONFIRMED
+await db.commit()
+```
+
+**Транзакция на каждую сущность:**
+```python
+for item in items:
+    try:
+        # ... работа ...
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        errors.append({"item": item, "error": str(e)})
+```
+
+---
+
+## 6. ОБРАБОТКА ОШИБОК
+
+```python
+from fastapi import HTTPException, status
+
+raise HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail="Trip не найден",
+)
+```
+
+**Для batch-операций** — не бросать, а копить в `errors`:
+```python
+errors = []
+for item in items:
+    if not driver:
+        errors.append({"code": item.code, "error": "Водитель не найден"})
+        continue
+return {"status": "completed", "created": results, "errors": errors}
+```
+
+---
+
+## 7. ОТПРАВКА В MAX
+
+```python
+from app.core.integrations.max_bot import MaxBotAPI
+
+bot = MaxBotAPI()   # на уровне модуля
+
+# Простое
+await bot.send_message(user_id, "текст")
+
+# С кнопками
+await bot.send_message(
+    user_id,
+    "текст",
+    buttons=[
+        [{"type": "callback", "text": "✅ Подтвердить", "payload": f"confirm_all:{trip_id}"}],
+        [{"type": "callback", "text": "🚫 Отказаться", "payload": f"reject_start:{trip_id}"}],
+    ],
+)
+```
+
+**Важно:** `user_id` = `User.max_user_id`, передаётся в query.
+
+---
+
+## 8. РЕГИСТРАЦИЯ РОУТЕРА
+
+**Файл:** `backend/app/api/v1/router.py`
+
+```python
+from app.api.v1.endpoints import (
+    auth, me, driver,
+    import_trips, import_drivers, export_trips, revoke_trips,
+    webhook,
+    my_new_endpoint,   # ← добавить
+)
+
+router.include_router(my_new_endpoint.router)   # ← добавить
+```
+
+---
+
+## 9. ОСОБЫЕ СЛУЧАИ
+
+### Вебхук MAX (без префикса)
+В `main.py` — отдельно:
+```python
+from app.api.v1.endpoints.webhook import router as webhook_router
+app.include_router(webhook_router)
+```
+
+### Префикс `/api/v1`
+`main.py`: `app.include_router(v1_router, prefix="/api/v1")`.
+Поэтому **в файле** префикс — **без** `/api/v1`:
+```python
+router = APIRouter(prefix="/import", tags=["Import"])   # → /api/v1/import/...
+```
+
+---
+
+## 10. ПРОВЕРКА
+
+```bash
+docker compose restart backend
+docker compose logs backend --tail=30
+```
+
+`/docs` (если `DEBUG=true`): http://localhost:8000/docs
+
+```bash
+curl -X POST http://localhost:8000/api/v1/<путь> \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: <ключ>" \
+  -d '{"...": "..."}'
+```
+
+---
+
+## 11. ЧАСТЫЕ ГРАБЛИ
+
+| Проблема | Причина | Решение |
+|---|---|---|
+| 404 | Забыл `include_router` | Добавить в `router.py` |
+| 404 при верном пути | Префикс `/api/v1` | Проверь `main.py` |
+| 422 | Схема не совпадает | Смотри `/docs` |
+| 500 при delete | Обращение к `obj.id` после delete | Запомни `id` до удаления |
+| Уведомление не уходит | Нет `max_user_id` | Проверь User |
+| SSL ошибка MAX | Нет сертификата Минцифры | `verify=False` |
+
+---
+
+## 12. ЭТАЛОННЫЙ ЭНДПОИНТ
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from pydantic import BaseModel
+from typing import List, Optional
+
+from app.database import get_db
+from app.models.user import User
+from app.models.trip import Trip, TripStatus
+from app.api.v1.deps.auth import verify_api_key
+from app.core.integrations.max_bot import MaxBotAPI
+
+router = APIRouter(prefix="/import", tags=["Import"])
+bot = MaxBotAPI()
+
+
+class ItemSchema(BaseModel):
+    code: str
+    value: Optional[int] = None
+
+
+class RequestSchema(BaseModel):
+    items: List[ItemSchema]
+
+
+@router.post("/my-endpoint")
+async def my_endpoint(
+    request: RequestSchema,
+    _: bool = Depends(verify_api_key),
+    db: AsyncSession = Depends(get_db),
+):
+    """Описание эндпоинта."""
+    created = []
+    errors = []
+
+    for item in request.items:
+        try:
+            result = await db.execute(
+                select(User).where(User.code == item.code)
+            )
+            user = result.scalar_one_or_none()
+            if not user:
+                errors.append({"code": item.code, "error": "Не найден"})
+                continue
+
+            # ... логика ...
+
+            await db.commit()
+
+            if user.max_user_id:
+                await bot.send_message(user.max_user_id, "Готово")
+
+            created.append({"code": item.code, "status": "created"})
+
+        except Exception as e:
+            await db.rollback()
+            errors.append({"code": item.code, "error": str(e)})
+
+    return {
+        "status": "completed",
+        "created": created,
+        "errors": errors,
+    }
+```
+
+---
+
+## 13. ЧЕКЛИСТ
+
+- [ ] Создал файл в `endpoints/`
+- [ ] `router = APIRouter(prefix=..., tags=[...])`
+- [ ] Выбрал зависимость: `verify_api_key` / `get_current_user` / ничего
+- [ ] Добавил `db: AsyncSession = Depends(get_db)`
+- [ ] Определил Pydantic-схемы (если тело)
+- [ ] Реализовал логику с `commit`/`rollback`
+- [ ] Обработал ошибки (для batch — в `errors`)
+- [ ] Подключил в `router.py` (или `main.py` для вебхука)
+- [ ] `docker compose restart backend`
+- [ ] Проверил в `/docs` или `curl`
