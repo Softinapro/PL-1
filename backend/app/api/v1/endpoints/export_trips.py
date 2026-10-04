@@ -62,9 +62,7 @@ async def export_trips(
                 "name": route.name,
                 "order_number": route.order_number,
                 "status": route.status.value,
-                "rejection_reason": route.rejection_reason,
-                "address_start": route.address_start,
-                "address_end": route.address_end,
+                "rejection_reason": route.rejection_reason,                
                 "points": points_data,
             })
         
