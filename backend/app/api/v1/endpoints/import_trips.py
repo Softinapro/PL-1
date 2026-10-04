@@ -31,20 +31,35 @@ class PointImportSchema(BaseModel):
 class RouteImportSchema(BaseModel):
     order_number: int
     name: Optional[str] = None
-    address_start: str
-    address_end: str
     points: List[PointImportSchema]
 
 
 class TripImportSchema(BaseModel):
     driver_code: str                       # код водителя (физлицо)
     logist_code: Optional[str] = None      # код логиста (пользователи), необязателен
-    date: date
     info: Optional[str] = None
     routes: List[RouteImportSchema]
 
 
+class TripsImportRequest(BaseModel):
+    date: date                             # одна дата на весь запрос
+    trips: List[TripImportSchema]
+
+
 # ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
+def validate_trip(trip_data: TripImportSchema) -> Optional[str]:
+    """
+    Проверяет структуру Trip'а.
+    Возвращает текст ошибки или None, если всё ок.
+    """
+    if not trip_data.routes:
+        return "У Trip'а нет маршрутов"
+    for route_data in trip_data.routes:
+        if not route_data.points:
+            return f"У маршрута #{route_data.order_number} нет точек"
+    return None
+
 
 def calculate_totals(routes: List[RouteImportSchema]) -> dict:
     """
@@ -56,7 +71,6 @@ def calculate_totals(routes: List[RouteImportSchema]) -> dict:
     routes_count = len(routes)
     points_count = sum(len(route.points) for route in routes)
 
-    # Суммируем вес, если он есть
     weights = [
         point.weight
         for route in routes
@@ -84,7 +98,6 @@ async def send_trip_notification(
     Отправляет уведомление водителю о новом рейсе.
     Возвращает {"sent": bool, "error": str | None}.
     """
-    # Если нет max_user_id — уведомление не отправить
     if not driver.max_user_id:
         return {
             "sent": False,
@@ -109,22 +122,32 @@ async def send_trip_notification(
 
 @router.post("/trips")
 async def import_trips(
-    trips_data: List[TripImportSchema],
+    request: TripsImportRequest,
     _: bool = Depends(verify_api_key),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Импорт рейсов из 1С.
-    Ожидает список рейсов с маршрутами и точками.
+    Одна дата на весь запрос. Каждый Trip обрабатывается в своей транзакции.
     Если рейс на дату уже есть — затирает старый.
     После создания — отправляет уведомление водителю в MAX.
     """
-    results = []
+    created = []
     errors = []
+    shipment_date = request.date
 
-    for trip_data in trips_data:
+    for trip_data in request.trips:
+        # 1. Валидация структуры (до транзакции)
+        validation_error = validate_trip(trip_data)
+        if validation_error:
+            errors.append({
+                "driver_code": trip_data.driver_code,
+                "error": validation_error,
+            })
+            continue
+
         try:
-            # 1. Находим водителя по коду
+            # 2. Находим водителя по коду
             driver_result = await db.execute(
                 select(User).where(User.code == trip_data.driver_code)
             )
@@ -136,16 +159,14 @@ async def import_trips(
                 })
                 continue
 
-            # 2. Логист не ищется в User — только фиксируем код из 1С
-
-            # 3. Считаем итоги из входных данных (до создания)
+            # 3. Считаем итоги из входных данных
             totals = calculate_totals(trip_data.routes)
 
             # 4. Если рейс на эту дату уже есть — УДАЛЯЕМ (затираем)
             existing_trip_result = await db.execute(
                 select(Trip).where(
                     Trip.driver_id == driver.id,
-                    Trip.date == trip_data.date,
+                    Trip.date == shipment_date,
                 )
             )
             existing_trip = existing_trip_result.scalar_one_or_none()
@@ -158,7 +179,7 @@ async def import_trips(
                 driver_id=driver.id,
                 logist_id=None,
                 logist_code=trip_data.logist_code,
-                date=trip_data.date,
+                date=shipment_date,
                 status=TripStatus.PENDING,
                 info=trip_data.info,
             )
@@ -171,8 +192,6 @@ async def import_trips(
                     trip_id=trip.id,
                     order_number=route_data.order_number,
                     name=route_data.name,
-                    address_start=route_data.address_start,
-                    address_end=route_data.address_end,
                     status=RouteStatus.PENDING,
                 )
                 db.add(route)
@@ -183,7 +202,7 @@ async def import_trips(
                     point = Point(
                         route_id=route.id,
                         code=point_data.code,
-                        date=trip_data.date,
+                        date=shipment_date,
                         order_number=point_data.order_number,
                         address=point_data.address,
                         weight=point_data.weight,
@@ -198,7 +217,7 @@ async def import_trips(
             notif_result = await send_trip_notification(
                 driver=driver,
                 trip_id=trip.id,
-                trip_date=trip_data.date.strftime("%d.%m.%Y"),
+                trip_date=shipment_date.strftime("%d.%m.%Y"),
                 routes_count=totals["routes_count"],
                 points_count=totals["points_count"],
                 total_weight=totals["total_weight"],
@@ -207,20 +226,16 @@ async def import_trips(
             # 10. Формируем результат
             result_entry = {
                 "driver_code": trip_data.driver_code,
-                "date": trip_data.date.isoformat(),
                 "status": "created",
                 "trip_id": trip.id,
                 "routes_count": totals["routes_count"],
                 "points_count": totals["points_count"],
-                "total_weight": str(totals["total_weight"]) if totals["total_weight"] else None,
+                "total_weight": str(totals["total_weight"]) if totals["total_weight"] is not None else None,
                 "notification_sent": notif_result["sent"],
             }
-
-            if notif_result["sent"]:
-                results.append(result_entry)
-            else:
+            if not notif_result["sent"]:
                 result_entry["notification_error"] = notif_result["error"]
-                errors.append(result_entry)
+            created.append(result_entry)
 
         except Exception as e:
             await db.rollback()
@@ -231,6 +246,7 @@ async def import_trips(
 
     return {
         "status": "completed",
-        "created": results,
+        "date": shipment_date.isoformat(),
+        "created": created,
         "errors": errors,
     }
