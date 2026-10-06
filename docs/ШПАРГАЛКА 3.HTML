@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шпаргалка по проекту Logistics</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0d1117;
+            color: #e6edf3;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #58a6ff;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        h2 {
+            color: #f0883e;
+            margin-top: 30px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #7ee787;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            background: #161b22;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #30363d;
+        }
+
+        .config-box {
+            background: #1f2937;
+            border: 2px solid #f0883e;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+
+        .config-box h3 {
+            color: #f0883e;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .config-item {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px dashed #30363d;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .config-item label {
+            display: block;
+            color: #f0883e;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .token-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #e6edf3;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+        }
+
+        .token-status {
+            font-size: 13px;
+            color: #8b949e;
+            margin-top: 8px;
+        }
+
+        .token-status.ok {
+            color: #7ee787;
+        }
+
+        .cmd-wrapper {
+            display: flex;
+            align-items: stretch;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+            background: #0d1117;
+            border-left: 4px solid #58a6ff;
+        }
+
+        .cmd {
+            flex: 1;
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e6edf3;
+            background: transparent;
+            border: none;
+            outline: none;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        .cmd-btn {
+            background: #21262d;
+            border: none;
+            border-left: 1px solid #30363d;
+            color: #8b949e;
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 0 6px 6px 0;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            min-width: 70px;
+            justify-content: center;
+        }
+
+        .cmd-btn:hover {
+            background: #30363d;
+            color: #e6edf3;
+        }
+
+        .cmd-btn.copied {
+            background: #238636;
+            color: #fff;
+        }
+
+        .cmd-btn.error {
+            background: #da3633;
+            color: #fff;
+        }
+
+        .cmd-label {
+            color: #8b949e;
+            font-size: 13px;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+
+        .output {
+            background: #0d1117;
+            border-left: 4px solid #7ee787;
+            padding: 12px 16px;
+            margin: 10px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            border-radius: 0 6px 6px 0;
+            color: #8b949e;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #238636;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        .badge-warn {
+            background: #d29922;
+        }
+
+        .badge-danger {
+            background: #da3633;
+        }
+
+        .badge-info {
+            background: #1f6feb;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background: #30363d;
+            margin: 30px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        th {
+            background: #21262d;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #30363d;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px;
+            border: 1px solid #30363d;
+        }
+
+        .error-table td:first-child {
+            color: #f85149;
+            font-weight: 600;
+        }
+
+        .error-table td:last-child {
+            color: #7ee787;
+        }
+
+        .note {
+            background: #1f2937;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #f0883e;
+            font-size: 14px;
+        }
+
+        .note code {
+            background: #0d1117;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        ul,
+        ol {
+            font-size: 14px;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            background: #0d1117;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        @media (max-width: 600px) {
+            .cmd-wrapper {
+                flex-wrap: wrap;
+            }
+
+            .cmd-btn {
+                width: 100%;
+                border-radius: 0 0 6px 6px;
+                border-left: none;
+                border-top: 1px solid #30363d;
+                padding: 8px;
+                min-height: 36px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🚀 Шпаргалка по проекту</h1>
+    <p><strong>Проект:</strong> Логистика для водителей (FastAPI + MAX + Docker)</p>
+    <p><strong>Путь:</strong> <code>~/projects/PL-1</code></p>
+    <p><strong>Админка:</strong> <code>http://localhost:8000/admin</code> | <strong>Логин:</strong> admin /
+        <strong>Пароль:</strong> admin</p>
+
+    <hr>
+
+    <!-- ============================================================ -->
+    <div class="config-box">
+        <h3>⚙️ Настройки (сохраняются в браузере)</h3>
+
+        <!-- Токен -->
+        <div class="config-item">
+            <label>🔑 Токен бота MAX</label>
+            <div id="tokenView" style="display:none;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <code id="tokenMasked"
+                        style="flex:1; padding:10px 14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; font-size:14px;">—</code>
+                    <button class="cmd-btn" onclick="editToken()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px;">✏️ Изменить</button>
+                    <button class="cmd-btn" onclick="clearToken()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px; background:#3d1f1f; color:#f85149;">🗑
+                        Сбросить</button>
+                </div>
+                <div class="token-status ok" id="tokenStatusView">✅ Токен сохранён</div>
+            </div>
+            <div id="tokenEdit" style="display:none;">
+                <input type="text" id="tokenInput" class="token-input" placeholder="Вставь токен бота..."
+                    autocomplete="off">
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveToken()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                    <button class="cmd-btn" onclick="cancelToken()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px;">Отмена</button>
+                </div>
+                <div class="token-status" id="tokenStatusEdit">Токен не введён.</div>
+            </div>
+            <div id="tokenEmpty">
+                <input type="text" id="tokenInputEmpty" class="token-input" placeholder="Вставь токен бота..."
+                    autocomplete="off">
+                <div style="margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveTokenEmpty()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tunnel URL -->
+        <div class="config-item">
+            <label>🌐 Tunnel URL (адрес из cloudpub, вместе с https://)</label>
+            <div id="tunnelView" style="display:none;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <code id="tunnelMasked"
+                        style="flex:1; padding:10px 14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; font-size:14px;">—</code>
+                    <button class="cmd-btn" onclick="editTunnel()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px;">✏️ Изменить</button>
+                    <button class="cmd-btn" onclick="clearTunnel()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px; background:#3d1f1f; color:#f85149;">🗑
+                        Сбросить</button>
+                </div>
+                <div class="token-status ok" id="tunnelStatusView">✅ URL сохранён</div>
+            </div>
+            <div id="tunnelEdit" style="display:none;">
+                <input type="text" id="tunnelInput" class="token-input"
+                    placeholder="https://hopefully-avid-foxhound.cloudpub.ru" autocomplete="off">
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveTunnel()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                    <button class="cmd-btn" onclick="cancelTunnel()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px;">Отмена</button>
+                </div>
+                <div class="token-status" id="tunnelStatusEdit">URL не введён.</div>
+            </div>
+            <div id="tunnelEmpty">
+                <input type="text" id="tunnelInputEmpty" class="token-input"
+                    placeholder="https://hopefully-avid-foxhound.cloudpub.ru" autocomplete="off">
+                <div style="margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveTunnelEmpty()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                </div>
+            </div>
+            <div class="token-status">Вставь полностью, вместе с <code>https://</code>. Без слэша в конце.</div>
+        </div>
+
+        <!-- IMPORT_API_KEY -->
+        <div class="config-item">
+            <label>🔐 IMPORT_API_KEY (для запросов от 1С)</label>
+            <div id="apiKeyView" style="display:none;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <code id="apiKeyMasked"
+                        style="flex:1; padding:10px 14px; background:#0d1117; border:1px solid #30363d; border-radius:8px; font-size:14px;">—</code>
+                    <button class="cmd-btn" onclick="editApiKey()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px;">✏️ Изменить</button>
+                    <button class="cmd-btn" onclick="clearApiKey()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 16px; background:#3d1f1f; color:#f85149;">🗑
+                        Сбросить</button>
+                </div>
+                <div class="token-status ok" id="apiKeyStatusView">✅ Ключ сохранён</div>
+            </div>
+            <div id="apiKeyEdit" style="display:none;">
+                <input type="text" id="apiKeyInput" class="token-input" placeholder="64 hex-символа..."
+                    autocomplete="off">
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveApiKey()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                    <button class="cmd-btn" onclick="cancelApiKey()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px;">Отмена</button>
+                </div>
+                <div class="token-status" id="apiKeyStatusEdit">Ключ не введён.</div>
+            </div>
+            <div id="apiKeyEmpty">
+                <input type="text" id="apiKeyInputEmpty" class="token-input" placeholder="64 hex-символа..."
+                    autocomplete="off">
+                <div style="margin-top:10px;">
+                    <button class="cmd-btn" onclick="saveApiKeyEmpty()"
+                        style="border-radius:8px; border:1px solid #30363d; padding:10px 20px; background:#238636; color:#fff;">💾
+                        Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- ============================================================ -->
+    <h2>🚀 Запуск проекта</h2>
+    <div class="container">
+        <h3>1. Перейти в папку проекта</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>cd ~/projects/PL-1</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Запустить контейнеры</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose up -d</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Проверить, что всё запустилось</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Проверить, что бэкенд отвечает</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl http://localhost:8000/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok","service":"logistics-api"}</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🌐 Туннель CloudPub</h2>
+    <div class="container">
+        <div class="note">
+            <span class="badge badge-danger">Важно</span>
+            Использовать <code>127.0.0.1:8000</code> или <code>localhost:8000</code>. <strong>НЕ</strong>
+            <code>host.docker.internal:8000</code> — на хосте это имя не резолвится.
+        </div>
+
+        <h3>1. Запустить туннель</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo publish http 127.0.0.1:8000</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="cmd-label" style="color:#8b949e;"># Скопируй новый URL (уже с https://) и вставь в поле «Tunnel URL»
+            вверху страницы.</div>
+
+        <h3>2. Проверить, что туннель работает</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X POST "{{TUNNEL}}/webhook" -H "Content-Type: application/json" -d
+                '{"test": true}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok"}</div>
+
+        <h3>3. Посмотреть активные туннели</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo ls</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Остановить туннель</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>pkill -f "clo publish"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <div class="note">
+            <span class="badge badge-warn">Важно</span>
+            После перезапуска туннеля <strong>URL меняется</strong>. Обнови поле «Tunnel URL» вверху и перерегистрируй
+            вебхук (см. ниже).
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔗 Регистрация вебхука в MAX</h2>
+    <div class="container">
+        <h3>1. Удалить старую подписку (если есть)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X DELETE
+                "https://platform-api2.max.ru/subscriptions?url={{TUNNEL}}/webhook" \
+                -H "Authorization: {{TOKEN}}"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Зарегистрировать вебхук</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X POST "https://platform-api2.max.ru/subscriptions" \
+                -H "Authorization: {{TOKEN}}" \
+                -H "Content-Type: application/json" \
+                -d '{"url": "{{TUNNEL}}/webhook", "update_types": ["message_created", "message_callback"]}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"success":true}</div>
+
+        <h3>3. Проверить активные подписки</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X GET "https://platform-api2.max.ru/subscriptions" \
+                -H "Authorization: {{TOKEN}}"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📥 Импорт из 1С</h2>
+    <div class="container">
+        <div class="note">
+            <span class="badge badge-info">Подсказка</span>
+            Ключ <code>IMPORT_API_KEY</code> вводится в поле вверху страницы.
+        </div>
+
+        <h3>1. Импорт тестового Trip</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X POST http://localhost:8000/api/v1/import/trips \
+                -H "Content-Type: application/json" \
+                -H "X-API-Key: {{API_KEY}}" \
+                -d
+                '{"date":"2026-10-06","trips":[{"driver_code":"0001234567","logist_code":"0008888888","info":"Тестовый
+                рейс","routes":[{"order_number":1,"name":"Север","points":[{"code":"T001","order_number":1,"address":"ул.
+                Ленина 1","weight":50},{"code":"T002","order_number":2,"address":"ул. Мира
+                5","weight":30}]},{"order_number":2,"name":"Юг","points":[{"code":"T003","order_number":1,"address":"ул.
+                Гагарина 10","weight":100}]}]}]}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Экспорт статусов на дату</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X GET "http://localhost:8000/api/v1/export/trips?date=2026-10-06" \
+                -H "X-API-Key: {{API_KEY}}"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Отзыв рейсов</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X POST http://localhost:8000/api/v1/import/trips/revoke \
+                -H "Content-Type: application/json" \
+                -H "X-API-Key: {{API_KEY}}" \
+                -d '{"date":"2026-10-06","driver_codes":["0001234567"]}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Узнать IMPORT_API_KEY из контейнера (если забыл)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec -T backend env | grep IMPORT_API_KEY</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🧪 Тестирование MAX</h2>
+    <div class="container">
+        <h3>1. Отправить простое сообщение (Python)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend python -c "
+                import asyncio
+                from app.core.integrations.max_bot import MaxBotAPI
+                async def test():
+                bot = MaxBotAPI()
+                res = await bot.send_message('63244418', 'Тест из Python')
+                print(res)
+                asyncio.run(test())
+                "</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="cmd-label" style="color:#8b949e;"># '63244418' — user_id получателя (можно заменить)</div>
+
+        <h3>2. Отправить с кнопками</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend python -c "
+                import asyncio
+                from app.core.integrations.max_bot import MaxBotAPI
+                async def test():
+                bot = MaxBotAPI()
+                buttons = [[{'type': 'callback', 'text': 'Тест', 'payload': 'test:1'}]]
+                res = await bot.send_message('63244418', 'Тест с кнопкой', buttons=buttons)
+                print(res)
+                asyncio.run(test())
+                "</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Проверить, что методы есть в классе</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend python -c "from app.core.integrations.max_bot import
+                MaxBotAPI; print([m for m in dir(MaxBotAPI) if not m.startswith('_')])"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔍 Проверка состояния</h2>
+    <div class="container">
+        <h3>1. Статус контейнеров</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Healthcheck бэкенда</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl http://localhost:8000/health</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Ping (с префиксом API)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl http://localhost:8000/api/v1/ping</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"message":"pong"}</div>
+
+        <h3>4. Проверка вебхука (локально)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -X POST "http://localhost:8000/webhook" -H "Content-Type: application/json"
+                -d '{"test": "hello"}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="output">{"status":"ok"}</div>
+
+        <h3>5. Проверка вебхука через туннель</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>curl -k -X POST "{{TUNNEL}}/webhook" -H "Content-Type: application/json" -d
+                '{"test": "hello"}'</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🗄️ Работа с БД (psql)</h2>
+    <div class="container">
+        <div class="note">
+            <span class="badge badge-info">Сервис</span>
+            В <code>docker compose exec</code> использовать <code>postgres</code>, не <code>db</code>.
+        </div>
+
+        <h3>1. Подключиться к БД</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Все пользователи</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "SELECT id,
+                phone, full_name, code, role, max_user_id FROM users ORDER BY id;"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Найти водителя по max_user_id</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "SELECT *
+                FROM users WHERE max_user_id = '63244418';"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Привязать max_user_id к водителю</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "UPDATE
+                users SET max_user_id = '63244418' WHERE code = '0001234567';"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>5. Все Trip'ы на дату</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "SELECT
+                t.id, u.full_name, t.date, t.status FROM trips t JOIN users u ON u.id = t.driver_id WHERE t.date =
+                '2026-10-06' ORDER BY t.id;"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>6. Все Route / Point по Trip</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "SELECT
+                r.id AS route_id, r.name, r.status, p.id AS point_id, p.code, p.address, p.weight, p.status FROM routes
+                r LEFT JOIN points p ON p.route_id = r.id WHERE r.trip_id = 1 ORDER BY r.order_number, p.order_number;"
+            </div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>7. Все причины отказа</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "SELECT id,
+                scope, text, is_active FROM rejection_reasons ORDER BY scope, id;"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>8. Структура таблицы routes</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "\d routes"
+            </div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🧹 Очистка и сброс</h2>
+    <div class="container">
+        <h3>1. Удалить все Trip'ы (со всеми Route и Point)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "DELETE
+                FROM trips;"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="cmd-label" style="color:#8b949e;"># Cascade удалит Route и Point</div>
+
+        <h3>2. Отвязать MAX у всех водителей</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "UPDATE
+                users SET max_user_id = NULL WHERE role = 'DRIVER';"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Удалить причины отказа (все)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec postgres psql -U logistics_user -d logistics_db -c "DELETE
+                FROM rejection_reasons;"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Сбросить всю БД (down → volumes)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose down -v && docker compose up -d</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+        <div class="note">
+            <span class="badge badge-danger">Опасно</span>
+            <code>-v</code> удалит volume с БД. После запуска — <code>alembic upgrade head</code> и заново создай
+            пользователей.
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📦 Alembic — миграции</h2>
+    <div class="container">
+        <h3>1. Текущая версия</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend alembic current</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Создать миграцию (автогенерация)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend alembic revision --autogenerate -m "описание"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Применить миграции</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend alembic upgrade head</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Откатить последнюю</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend alembic downgrade -1</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>5. История миграций</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose exec backend alembic history</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📜 Просмотр логов</h2>
+    <div class="container">
+        <h3>1. Логи бэкенда (в реальном времени)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend -f --tail 30</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Логи бэкенда (последние 50)</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend --tail 50</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Логи с фильтром по ошибкам</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend | grep -i error</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Логи с фильтром по вебхуку</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend | grep -E "(Webhook|Нажата)"</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>5. Сохранить логи в файл</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose logs backend --tail 200 > logs_$(date +%Y-%m-%d_%H-%M).txt</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🔄 Перезапуск и остановка</h2>
+    <div class="container">
+        <h3>1. Перезапустить бэкенд</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose restart backend</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Перезапустить все контейнеры</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose restart</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>3. Остановить все</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose down</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>4. Пересобрать с очисткой кеша</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose down && docker rmi pl-1-backend && docker compose up -d --build
+            </div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📦 Работа с Git</h2>
+    <div class="container">
+        <h3>1. Статус</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git status</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>2. Добавить, закоммитить, запушить</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>git add . && git commit -m "описание" && git push</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>⚡ Быстрые команды</h2>
+    <div class="container">
+        <h3>Полный запуск проекта</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>cd ~/projects/PL-1 && docker compose up -d && curl http://localhost:8000/health
+            </div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>Запуск туннеля</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>~/clo publish http 127.0.0.1:8000</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+
+        <h3>Проверка всего сразу</h3>
+        <div class="cmd-wrapper">
+            <div class="cmd" readonly>docker compose ps && curl -s http://localhost:8000/health && ~/clo ls</div>
+            <button class="cmd-btn" onclick="copyCmd(this)">📋 Копировать</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>🆘 Частые ошибки и решения</h2>
+    <div class="container">
+        <table class="error-table">
+            <tr>
+                <th>Ошибка</th>
+                <th>Решение</th>
+            </tr>
+            <tr>
+                <td><code>Connection reset by peer</code></td>
+                <td>Смотреть логи: <code>docker compose logs backend --tail 50</code></td>
+            </tr>
+            <tr>
+                <td><code>No module named 'app'</code></td>
+                <td>Пересобрать: <code>docker compose up -d --build</code></td>
+            </tr>
+            <tr>
+                <td><code>503 Service Unavailable</code> (туннель)</td>
+                <td>Перезапустить туннель с <code>127.0.0.1:8000</code></td>
+            </tr>
+            <tr>
+                <td><code>Unknown recipient</code> (MAX)</td>
+                <td><code>user_id</code> передавать в <strong>query</strong>, не в теле</td>
+            </tr>
+            <tr>
+                <td><code>SSL: CERTIFICATE_VERIFY_FAILED</code></td>
+                <td>Добавить <code>verify=False</code> в httpx или сертификат Минцифры</td>
+            </tr>
+            <tr>
+                <td><code>service "db" is not running</code></td>
+                <td>Сервис называется <code>postgres</code>, не <code>db</code></td>
+            </tr>
+            <tr>
+                <td><code>No config file 'alembic.ini'</code></td>
+                <td>Перезапустить бэкенд, проверить volume</td>
+            </tr>
+            <tr>
+                <td><code>invalid input value for enum userrole</code></td>
+                <td>Использовать <code>ADMIN</code>, <code>LOGIST</code>, <code>DRIVER</code> (верхний регистр)</td>
+            </tr>
+            <tr>
+                <td><code>duplicate key value violates unique constraint</code></td>
+                <td>Поле уже занято — обновляй существующую запись, не создавай дубль</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2>📝 Важные заметки</h2>
+    <div class="container">
+        <ul>
+            <li><strong>Tunnel URL:</strong> вводится в поле вверху страницы, <strong>вместе с</strong>
+                <code>https://</code></li>
+            <li><strong>Токен MAX:</strong> вводится в поле вверху страницы</li>
+            <li><strong>IMPORT_API_KEY:</strong> вводится в поле вверху страницы</li>
+            <li><strong>Админка:</strong> <code>http://localhost:8000/admin</code> — admin / admin</li>
+            <li><strong>PostgreSQL:</strong> порт 5432, логин <code>logistics_user</code>, пароль
+                <code>secure_password</code>, БД <code>logistics_db</code></li>
+            <li><strong>Redis:</strong> порт 6379</li>
+            <li><strong>API docs:</strong> <code>http://localhost:8000/docs</code> (если DEBUG=true)</li>
+            <li><strong>Healthcheck:</strong> <code>http://localhost:8000/health</code></li>
+            <li><strong>Ping:</strong> <code>http://localhost:8000/api/v1/ping</code></li>
+            <li><strong>Вебхук:</strong> <code>/webhook</code> — без префикса <code>/api/v1</code></li>
+            <li><strong>MAX API:</strong> домен <code>platform-api2.max.ru</code></li>
+        </ul>
+    </div>
+
+    <hr>
+    <p style="color: #8b949e; text-align: center; font-size: 13px;">
+        Шпаргалка по проекту Logistics — FastAPI + MAX + Docker<br>
+        Сохранена: <span id="date"></span>
+    </p>
+
+    <script>
+        document.getElementById('date').textContent = new Date().toLocaleString('ru-RU');
+
+        const TOKEN_KEY = 'pl1_max_bot_token';
+        const TUNNEL_KEY = 'pl1_tunnel_url';
+        const API_KEY = 'pl1_import_api_key';
+
+        // ===== УНИВЕРСАЛЬНАЯ ЛОГИКА ДЛЯ ТРЁХ ПОЛЕЙ =====
+        function createField(config) {
+            const { key, viewId, editId, emptyId, maskedId, inputId, inputEmptyId, statusEditId, placeholder } = config;
+
+            const view = document.getElementById(viewId);
+            const edit = document.getElementById(editId);
+            const empty = document.getElementById(emptyId);
+            const masked = document.getElementById(maskedId);
+            const input = document.getElementById(inputId);
+            const inputEmpty = document.getElementById(inputEmptyId);
+            const statusEdit = document.getElementById(statusEditId);
+
+            function get() { return localStorage.getItem(key) || ''; }
+
+            function mask(t) {
+                if (!t) return '—';
+                if (t.length <= 16) return t.slice(0, 4) + '...' + t.slice(-4);
+                return t.slice(0, 10) + '...' + t.slice(-6) + ` (${t.length} символов)`;
+            }
+
+            function render() {
+                const v = get();
+                if (v) {
+                    view.style.display = 'block';
+                    edit.style.display = 'none';
+                    empty.style.display = 'none';
+                    masked.textContent = mask(v);
+                } else {
+                    view.style.display = 'none';
+                    edit.style.display = 'none';
+                    empty.style.display = 'block';
+                }
+            }
+
+            function editField() {
+                input.value = get();
+                view.style.display = 'none';
+                edit.style.display = 'block';
+                empty.style.display = 'none';
+                updateStatus();
+                input.focus();
+            }
+
+            function cancel() { render(); }
+
+            function save() {
+                const v = input.value.trim();
+                if (!v) {
+                    if (!confirm('Поле пустое. Удалить сохранённое?')) return;
+                    localStorage.removeItem(key);
+                } else {
+                    localStorage.setItem(key, v);
+                }
+                render();
+            }
+
+            function saveEmpty() {
+                const v = inputEmpty.value.trim();
+                if (!v) { alert('Введи значение.'); return; }
+                localStorage.setItem(key, v);
+                render();
+            }
+
+            function clear() {
+                if (!confirm('Удалить сохранённое значение?')) return;
+                localStorage.removeItem(key);
+                render();
+            }
+
+            function updateStatus() {
+                const v = input.value.trim();
+                if (v.length > 10) {
+                    statusEdit.textContent = `Будет сохранено (${v.length} символов)`;
+                    statusEdit.classList.add('ok');
+                } else {
+                    statusEdit.textContent = 'Не введено.';
+                    statusEdit.classList.remove('ok');
+                }
+            }
+
+            input.addEventListener('input', updateStatus);
+            render();
+
+            return { get, editField, cancel, save, saveEmpty, clear, render };
+        }
+
+        const tokenField = createField({
+            key: TOKEN_KEY,
+            viewId: 'tokenView', editId: 'tokenEdit', emptyId: 'tokenEmpty',
+            maskedId: 'tokenMasked', inputId: 'tokenInput', inputEmptyId: 'tokenInputEmpty',
+            statusEditId: 'tokenStatusEdit'
+        });
+
+        const tunnelField = createField({
+            key: TUNNEL_KEY,
+            viewId: 'tunnelView', editId: 'tunnelEdit', emptyId: 'tunnelEmpty',
+            maskedId: 'tunnelMasked', inputId: 'tunnelInput', inputEmptyId: 'tunnelInputEmpty',
+            statusEditId: 'tunnelStatusEdit'
+        });
+
+        const apiKeyField = createField({
+            key: API_KEY,
+            viewId: 'apiKeyView', editId: 'apiKeyEdit', emptyId: 'apiKeyEmpty',
+            maskedId: 'apiKeyMasked', inputId: 'apiKeyInput', inputEmptyId: 'apiKeyInputEmpty',
+            statusEditId: 'apiKeyStatusEdit'
+        });
+
+        // Экспортируем функции наружу для onclick
+        function editToken() { tokenField.editField(); }
+        function cancelToken() { tokenField.cancel(); }
+        function saveToken() { tokenField.save(); }
+        function saveTokenEmpty() { tokenField.saveEmpty(); }
+        function clearToken() { tokenField.clear(); }
+
+        function editTunnel() { tunnelField.editField(); }
+        function cancelTunnel() { tunnelField.cancel(); }
+        function saveTunnel() { tunnelField.save(); }
+        function saveTunnelEmpty() { tunnelField.saveEmpty(); }
+        function clearTunnel() { tunnelField.clear(); }
+
+        function editApiKey() { apiKeyField.editField(); }
+        function cancelApiKey() { apiKeyField.cancel(); }
+        function saveApiKey() { apiKeyField.save(); }
+        function saveApiKeyEmpty() { apiKeyField.saveEmpty(); }
+        function clearApiKey() { apiKeyField.clear(); }
+
+        // ===== Подстановка плейсхолдеров =====
+        function replacePlaceholders(text) {
+            const token = localStorage.getItem(TOKEN_KEY) || '{{TOKEN}}';
+            const tunnel = localStorage.getItem(TUNNEL_KEY) || '{{TUNNEL}}';
+            const apiKey = localStorage.getItem(API_KEY) || '{{API_KEY}}';
+
+            let result = text
+                .replace(/\{\{TOKEN\}\}/g, token)
+                .replace(/\{\{TUNNEL\}\}/g, tunnel)
+                .replace(/\{\{API_KEY\}\}/g, apiKey);
+
+            return result;
+        }
+
+        // ===== Копирование =====
+        function copyCmd(btn) {
+            const wrapper = btn.closest('.cmd-wrapper');
+            const cmdElement = wrapper.querySelector('.cmd');
+            let text = cmdElement.textContent.trim();
+
+            // Проверки на пустые плейсхолдеры
+            const missing = [];
+            if (text.includes('{{TOKEN}}') && !localStorage.getItem(TOKEN_KEY)) missing.push('Токен MAX');
+            if (text.includes('{{TUNNEL}}') && !localStorage.getItem(TUNNEL_KEY)) missing.push('Tunnel URL');
+            if (text.includes('{{API_KEY}}') && !localStorage.getItem(API_KEY)) missing.push('IMPORT_API_KEY');
+
+            if (missing.length > 0) {
+                if (!confirm(`Не заполнено: ${missing.join(', ')}. Скопировать с плейсхолдерами?`)) {
+                    return;
+                }
+            }
+
+            text = replacePlaceholders(text);
+
+            const done = () => {
+                btn.textContent = '✅ Скопировано';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 Копировать';
+                    btn.classList.remove('copied');
+                }, 2000);
+            };
+            const fail = () => {
+                btn.textContent = '❌ Ошибка';
+                btn.classList.add('error');
+                setTimeout(() => {
+                    btn.textContent = '📋 Копировать';
+                    btn.classList.remove('error');
+                }, 2000);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done, fail));
+            } else {
+                fallbackCopy(text, done, fail);
+            }
+        }
+
+        function fallbackCopy(text, done, fail) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); done(); } catch (e) { fail(); }
+            document.body.removeChild(ta);
+        }
+    </script>
+
+</body>
+
+</html>
