@@ -1,0 +1,42 @@
+{
+    "date": "2026-10-06",
+    "trips": [
+        {
+            "driver_code": "0001234567",
+            "logist_code": "0008888888",
+            "info": "Тестовый рейс",
+            "routes": [
+                {
+                    "order_number": 1,
+                    "name": "Север",
+                    "points": [
+                        {
+                            "code": "T001",
+                            "order_number": 1,
+                            "address": "ул. Ленина 1",
+                            "weight": 50
+                        },
+                        {
+                            "code": "T002",
+                            "order_number": 2,
+                            "address": "ул. Мира 5",
+                            "weight": 30
+                        }
+                    ]
+                },
+                {
+                    "order_number": 2,
+                    "name": "Юг",
+                    "points": [
+                        {
+                            "code": "T003",
+                            "order_number": 1,
+                            "address": "ул. Гагарина 10",
+                            "weight": 100
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
