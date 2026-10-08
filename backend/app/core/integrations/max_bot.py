@@ -96,8 +96,11 @@ class MaxBotAPI:
         routes_count: int,
         points_count: int,
         total_weight: Optional[Decimal] = None,
+        is_update: bool = False,
     ) -> dict:
+            
         """Уведомление о новом рейсе с кнопкой «Посмотреть предложение»."""
+        
         bot_name = settings.MAX_BOT_NAME
         deep_link = f"https://max.ru/{bot_name}?startapp=trip_{trip_id}"
 
@@ -106,8 +109,13 @@ class MaxBotAPI:
         else:
             weight_str = "Общий вес: не указан"
 
+        if is_update:
+            header = f"🔄 <b>Предложение обновлено на {trip_date}.</b>"
+        else:
+            header = f"🚛 <b>Вам назначен рейс на {trip_date}.</b>"
+
         text = (
-            f"🚛 <b>Вам назначен рейс на {trip_date}.</b>\n"
+            f"{header}\n"
             f"\n"
             f"Маршрутов: {routes_count}\n"
             f"Точек: {points_count}\n"

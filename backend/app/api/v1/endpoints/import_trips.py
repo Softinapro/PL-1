@@ -93,6 +93,7 @@ async def send_trip_notification(
     routes_count: int,
     points_count: int,
     total_weight: Optional[Decimal],
+    is_update: bool = False,
 ) -> dict:
     """
     Отправляет уведомление водителю о новом рейсе.
@@ -112,6 +113,7 @@ async def send_trip_notification(
             routes_count=routes_count,
             points_count=points_count,
             total_weight=total_weight,
+            is_update=is_update,
         )
         return {"sent": True, "error": None}
     except Exception as e:
@@ -162,7 +164,7 @@ async def import_trips(
             # 3. Считаем итоги из входных данных
             totals = calculate_totals(trip_data.routes)
 
-            # 4. Если рейс на эту дату уже есть — УДАЛЯЕМ (затираем)
+                        # 4. Если рейс на эту дату уже есть — УДАЛЯЕМ (затираем)
             existing_trip_result = await db.execute(
                 select(Trip).where(
                     Trip.driver_id == driver.id,
@@ -170,6 +172,7 @@ async def import_trips(
                 )
             )
             existing_trip = existing_trip_result.scalar_one_or_none()
+            is_update = existing_trip is not None
             if existing_trip:
                 await db.delete(existing_trip)
                 await db.flush()
@@ -221,6 +224,7 @@ async def import_trips(
                 routes_count=totals["routes_count"],
                 points_count=totals["points_count"],
                 total_weight=totals["total_weight"],
+                is_update=is_update,
             )
 
             # 10. Формируем результат

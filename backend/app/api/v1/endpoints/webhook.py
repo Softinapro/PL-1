@@ -7,6 +7,7 @@ from app.models.user import User
 from app.models.trip import Trip, TripStatus
 from app.models.route import Route, RouteStatus
 from app.models.point import Point, PointStatus
+from app.models.rejection_reason import RejectionReason, RejectionScope
 from app.core.integrations.max_bot import MaxBotAPI
 
 router = APIRouter()
@@ -36,9 +37,22 @@ async def find_trip_by_id(trip_id: int) -> Trip | None:
         return result.scalar_one_or_none()
 
 
+async def find_reasons_by_scope(scope: RejectionScope) -> list[RejectionReason]:
+    """Активные причины отказа для указанного scope."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(RejectionReason)
+            .where(
+                RejectionReason.scope == scope,
+                RejectionReason.is_active == True,
+            )
+            .order_by(RejectionReason.id)
+        )
+        return list(result.scalars().all())
+
+
 def format_trip_card(trip: Trip, trip_date: str) -> str:
     """Формирует текст карточки рейса."""
-    # Общие итоги
     routes_count = len(trip.routes)
     points_count = sum(len(r.points) for r in trip.routes)
 
@@ -48,7 +62,6 @@ def format_trip_card(trip: Trip, trip_date: str) -> str:
     total_weight = sum(weights) if weights else None
     weight_str = f"{total_weight} кг" if total_weight else "не указан"
 
-    # Статус
     status_map = {
         TripStatus.PENDING: "⏳ Ожидает подтверждения",
         TripStatus.SENT: "📨 Отправлено",
@@ -66,7 +79,6 @@ def format_trip_card(trip: Trip, trip_date: str) -> str:
         "",
     ]
 
-    # Каждый маршрут
     sorted_routes = sorted(trip.routes, key=lambda r: r.order_number)
     for route in sorted_routes:
         route_points_count = len(route.points)
@@ -111,7 +123,37 @@ async def confirm_all_points_and_routes(trip_id: int) -> Trip | None:
 
         await db.commit()
 
-        # Перечитываем, чтобы вернуть актуальные данные
+        result = await db.execute(
+            select(Trip)
+            .where(Trip.id == trip_id)
+            .options(selectinload(Trip.routes).selectinload(Route.points))
+        )
+        return result.scalar_one_or_none()
+
+
+async def reject_whole_trip(trip_id: int, reason_text: str | None) -> Trip | None:
+    """Отказ от всего Trip: все Route и Point → REJECTED, Trip → REJECTED."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Trip)
+            .where(Trip.id == trip_id)
+            .options(selectinload(Trip.routes).selectinload(Route.points))
+        )
+        trip = result.scalar_one_or_none()
+        if not trip:
+            return None
+
+        for route in trip.routes:
+            route.status = RouteStatus.REJECTED
+            route.rejection_reason = reason_text
+            for point in route.points:
+                point.status = PointStatus.REJECTED
+                point.rejection_reason = reason_text
+
+        trip.status = TripStatus.REJECTED
+
+        await db.commit()
+
         result = await db.execute(
             select(Trip)
             .where(Trip.id == trip_id)
@@ -153,7 +195,6 @@ async def max_webhook(request: Request):
                 )
                 return {"status": "ok"}
 
-            # Меню без my_trip
             await bot.send_message(
                 max_user_id,
                 f"👋 Здравствуйте, {user.full_name}!\n\n"
@@ -210,9 +251,11 @@ async def max_webhook(request: Request):
                     trip_date = trip.date.strftime("%d.%m.%Y")
                     text = format_trip_card(trip, trip_date)
 
-                    # Если Trip уже подтверждён — без кнопок
                     if trip.status == TripStatus.CONFIRMED:
                         text += "\n\n✅ <b>Рейс подтверждён.</b>"
+                        await bot.send_message(max_user_id, text)
+                    elif trip.status == TripStatus.REJECTED:
+                        text += "\n\n❌ <b>Рейс отклонён.</b>"
                         await bot.send_message(max_user_id, text)
                     else:
                         buttons = [
@@ -243,18 +286,106 @@ async def max_webhook(request: Request):
             # ---------- reject_start:{trip_id} ----------
             elif payload.startswith("reject_start:"):
                 trip_id = int(payload.split(":")[1])
-                # Заглушка — FSM в Шаге 6.4
+                trip = await find_trip_by_id(trip_id)
+
+                if not trip:
+                    await bot.send_message(max_user_id, "❌ Рейс не найден.")
+                elif not user or trip.driver_id != user.id:
+                    await bot.send_message(max_user_id, "❌ Этот рейс не ваш.")
+                elif trip.status in (TripStatus.REJECTED, TripStatus.CONFIRMED):
+                    await bot.send_message(
+                        max_user_id,
+                        "❌ Рейс уже обработан — отказ невозможен.",
+                    )
+                else:
+                    trip_date = trip.date.strftime("%d.%m.%Y")
+                    await bot.send_message(
+                        max_user_id,
+                        f"🚫 <b>Отказ от рейса на {trip_date}</b>\n\n"
+                        "Как отказаться?",
+                        buttons=[
+                            [{"type": "callback", "text": "🚫 От всего", "payload": f"reject_scope:trip:{trip_id}"}],
+                            [{"type": "callback", "text": "✏️ Частично", "payload": f"reject_scope:partial:{trip_id}"}],
+                            [{"type": "callback", "text": "← Назад", "payload": f"view_trip:{trip_id}"}],
+                        ],
+                    )
+
+            # ---------- reject_scope:trip:{trip_id} ----------
+            elif payload.startswith("reject_scope:trip:"):
+                trip_id = int(payload.split(":")[2])
+                trip = await find_trip_by_id(trip_id)
+
+                if not trip or not user or trip.driver_id != user.id:
+                    await bot.send_message(max_user_id, "❌ Рейс не найден.")
+                else:
+                    reasons = await find_reasons_by_scope(RejectionScope.TRIP)
+
+                    if not reasons:
+                        # Причин нет — отказ без причины
+                        trip = await reject_whole_trip(trip_id, None)
+                        await bot.send_message(
+                            max_user_id,
+                            "❌ <b>Рейс отклонён.</b>\n\n"
+                            "Логист увидит ваш отказ.",
+                        )
+                    else:
+                        buttons = [
+                            [{
+                                "type": "callback",
+                                "text": r.text,
+                                "payload": f"reject_reason:trip:{trip_id}:{r.id}",
+                            }]
+                            for r in reasons
+                        ]
+                        buttons.append(
+                            [{"type": "callback", "text": "← Назад", "payload": f"reject_start:{trip_id}"}]
+                        )
+                        await bot.send_message(
+                            max_user_id,
+                            "🚫 <b>Укажите причину отказа:</b>",
+                            buttons=buttons,
+                        )
+
+            # ---------- reject_scope:partial:{trip_id} ----------
+            elif payload.startswith("reject_scope:partial:"):
+                trip_id = int(payload.split(":")[2])
                 await bot.send_message(
                     max_user_id,
-                    "🚫 <b>Отказ от рейса</b>\n\n"
+                    "✏️ <b>Частичный отказ</b>\n\n"
                     "Функция в разработке. Ожидайте обновления.",
                 )
+
+            # ---------- reject_reason:trip:{trip_id}:{reason_id} ----------
+            elif payload.startswith("reject_reason:trip:"):
+                parts = payload.split(":")
+                trip_id = int(parts[2])
+                reason_id = int(parts[3])
+
+                trip = await find_trip_by_id(trip_id)
+                if not trip or not user or trip.driver_id != user.id:
+                    await bot.send_message(max_user_id, "❌ Рейс не найден.")
+                else:
+                    # Получить текст причины
+                    async with AsyncSessionLocal() as db:
+                        result = await db.execute(
+                            select(RejectionReason).where(RejectionReason.id == reason_id)
+                        )
+                        reason = result.scalar_one_or_none()
+
+                    reason_text = reason.text if reason else None
+
+                    await reject_whole_trip(trip_id, reason_text)
+                    await bot.send_message(
+                        max_user_id,
+                        f"❌ <b>Рейс отклонён.</b>\n\n"
+                        f"Причина: {reason_text or '—'}\n\n"
+                        "Логист увидит ваш отказ.",
+                    )
 
             # ---------- неизвестный payload ----------
             else:
                 print(f"⚠️ Неизвестный payload: {payload}")
 
-            # Отвечаем на callback (убираем «часики»)
             if callback_id:
                 await bot.answer_callback(callback_id)
 
