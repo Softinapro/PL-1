@@ -6,6 +6,7 @@ import enum
 class RouteStatus(str, enum.Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
+    PARTIAL = "partial"
     REJECTED = "rejected"
 
 class Route(BaseModel):
