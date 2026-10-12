@@ -1,52 +1,107 @@
 import hashlib
 import hmac
 import json
-from urllib.parse import urlparse, parse_qs
-from app.config import settings
+import time
+from typing import Optional
+from urllib.parse import unquote, parse_qsl
 
-def validate_init_data(init_data: str) -> dict:
+
+def validate_init_data(
+    raw_init_data: str,
+    bot_token: str,
+    max_age_seconds: int = 3600,
+) -> Optional[dict]:
     """
-    Проверяет подпись initData от MAX.
-    Возвращает данные пользователя, если подпись верна.
-    
-    Формат initData:
-    user=%7B%22id%22%3A12345%2C%22first_name%22%3A%22John%22%7D&auth_date=1234567890&hash=...
+    Валидирует initData из MAX WebApp (Bridge).
+
+    Возвращает распарсенный dict (с ключом "user" — уже распакованным JSON)
+    при успехе, либо None при любой ошибке.
+
+    Алгоритм (официальная дока MAX):
+      1. Парсим raw_init_data по "&" -> [(key, value), ...] (значения не декодируем).
+      2. Проверяем уникальность ключей. Дубликат -> fail.
+      3. Извлекаем и исключаем "hash" (сохраняем оригинал).
+      4. URL-декодируем все values.
+      5. Сортируем пары по ключу (a -> z).
+      6. Собираем launch_params = "k1=v1\\nk2=v2\\n...".
+      7. secret_key = HMAC-SHA256(key=b"WebAppData", msg=bot_token).
+      8. signature  = HMAC-SHA256(key=secret_key,   msg=launch_params).hexdigest()
+      9. hmac.compare_digest(signature, hash).
+     10. Проверяем auth_date (TTL).
     """
-    # Парсим строку
-    parsed = parse_qs(init_data)
-    
-    # Извлекаем hash
-    received_hash = parsed.get('hash', [None])[0]
-    if not received_hash:
-        raise ValueError("Missing hash in initData")
-    
-    # Удаляем hash из данных для проверки
-    parsed.pop('hash', None)
-    
-    # Сортируем и собираем строку для проверки
-    sorted_items = sorted(parsed.items())
-    data_check_string = '\n'.join([f"{k}={v[0]}" for k, v in sorted_items])
-    
-    # Вычисляем HMAC-SHA256
-    secret_key = hashlib.sha256(settings.MAX_BOT_TOKEN.encode()).digest()
-    computed_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    
-    if computed_hash != received_hash:
-        raise ValueError("Invalid initData signature")
-    
-    # Парсим user
-    user_data = parsed.get('user', [None])[0]
-    if user_data:
+    if not raw_init_data:
+        return None
+
+    # --- 1. Парсим пары, не декодируя values ---
+    try:
+        pairs = [tuple(pair.split("=", 1)) for pair in raw_init_data.split("&")]
+    except ValueError:
+        return None
+
+    # --- 2. Проверка уникальности ключей ---
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        return None
+
+    # --- 3. Извлекаем и исключаем hash ---
+    hash_from_data = None
+    filtered_pairs = []
+    for k, v in pairs:
+        if k == "hash":
+            hash_from_data = v
+        else:
+            filtered_pairs.append((k, v))
+
+    if not hash_from_data:
+        return None
+
+    # --- 4. URL-декодируем values ---
+    decoded_pairs = [(k, unquote(v)) for k, v in filtered_pairs]
+
+    # --- 5. Сортируем по ключу ---
+    decoded_pairs.sort(key=lambda kv: kv[0])
+
+    # --- 6. Собираем launch_params через "\n" ---
+    launch_params = "\n".join(f"{k}={v}" for k, v in decoded_pairs)
+
+    # --- 7. secret_key = HMAC-SHA256(key="WebAppData", msg=bot_token) ---
+    secret_key = hmac.new(
+        key=b"WebAppData",
+        msg=bot_token.encode(),
+        digestmod=hashlib.sha256,
+    ).digest()
+
+    # --- 8. signature = HMAC-SHA256(key=secret_key, msg=launch_params) ---
+    signature = hmac.new(
+        key=secret_key,
+        msg=launch_params.encode(),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+
+    # --- 9. Сравнение с hash (constant-time) ---
+    if not hmac.compare_digest(signature, hash_from_data):
+        return None
+
+    # --- 10. Проверка TTL ---
+    result: dict = dict(decoded_pairs)
+
+    auth_date_raw = result.get("auth_date")
+    if auth_date_raw is None:
+        return None
+    try:
+        auth_date = int(auth_date_raw)
+    except (TypeError, ValueError):
+        return None
+
+    if time.time() - auth_date > max_age_seconds:
+        return None
+
+    # --- Распаковываем "user", если он есть (это JSON) ---
+    user_raw = result.get("user")
+    if user_raw:
         try:
-            user = json.loads(user_data)
-            return user
+            result["user"] = json.loads(user_raw)
         except json.JSONDecodeError:
-            raise ValueError("Invalid user data in initData")
-    
-    # Если user нет — пробуем получить другие данные
-    return {
-        'id': parsed.get('id', [None])[0],
-        'first_name': parsed.get('first_name', [None])[0],
-        'last_name': parsed.get('last_name', [None])[0],
-        'username': parsed.get('username', [None])[0],
-    }
+            return None
+
+    return result
