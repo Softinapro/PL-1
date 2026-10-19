@@ -357,7 +357,7 @@ body {
     }
 }
 
-/* Сворачивание маршрутов */
+/* Сворачивание маршрутов (режим просмотра) */
 .route-header {
     cursor: pointer;
     user-select: none;
@@ -366,7 +366,8 @@ body {
     border-radius: 8px 8px 0 0;
     transition: background 0.15s;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    /* Запрещаем перенос, чтобы кнопка была справа */
     align-items: center;
     gap: 8px;
 }
@@ -375,20 +376,28 @@ body {
     background: #f0f0f0;
 }
 
+/* Группа: иконка + название */
 .route-title-group {
     display: flex;
     align-items: center;
     gap: 6px;
     flex: 1;
+    /* Занимает всё доступное место */
     min-width: 0;
+    /* Позволяет тексту сжиматься */
+    overflow: hidden;
 }
 
+/* Счётчик точек */
 .route-stats {
     font-size: 14px;
     color: #666;
     white-space: nowrap;
+    flex-shrink: 0;
+    /* Не сжимается */
 }
 
+/* Кнопка-треугольник */
 .route-toggle-icon {
     display: inline-block;
     transition: transform 0.2s ease;
@@ -398,6 +407,8 @@ body {
     padding: 4px;
     border-radius: 4px;
     background: #e0e0e0;
+    flex-shrink: 0;
+    /* Не сжимается и всегда справа */
 }
 
 .route-block.collapsed .route-toggle-icon {
@@ -450,6 +461,8 @@ body {
     margin: 0;
     border-radius: 0;
     cursor: default;
+    flex-wrap: nowrap;
+    /* В режиме выбора тоже не переносим */
 }
 
 .selection-mode .route-block.selected .route-header {
@@ -481,6 +494,7 @@ body {
     height: 22px;
     margin-right: 10px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .selection-mode .point-row .select-checkbox {
@@ -489,6 +503,7 @@ body {
     margin-right: 10px;
     margin-top: 4px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 /* Название маршрута */
