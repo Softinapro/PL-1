@@ -125,13 +125,26 @@ async function loadTrips(date) {
 
     const dateControls = document.getElementById('date-controls');
     const dateInput = document.getElementById('date-input');
+    const tomorrowBtn = document.getElementById('tomorrow-btn');
     dateControls.classList.remove('hidden');
 
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
     if (!date) {
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
         dateInput.value = tomorrow;
     } else {
         dateInput.value = date;
+    }
+
+    // Меняем текст и состояние кнопки в зависимости от выбранной даты
+    if (dateInput.value === tomorrow) {
+        tomorrowBtn.textContent = 'Завтра';
+        tomorrowBtn.disabled = true;
+        tomorrowBtn.style.opacity = '0.5';
+    } else {
+        tomorrowBtn.textContent = 'Вернуться на завтра';
+        tomorrowBtn.disabled = false;
+        tomorrowBtn.style.opacity = '1';
     }
 
     try {
@@ -148,7 +161,7 @@ async function loadTrips(date) {
         statusEl.classList.add('hidden');
 
         if (trips.length === 0) {
-            const activeDate = date || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            const activeDate = date || tomorrow;
             tripContainer.innerHTML = renderNoTrips(activeDate);
         } else {
             tripContainer.innerHTML = trips.map(renderTrip).join('');
@@ -168,9 +181,7 @@ function onDateChange() {
 }
 
 function resetToTomorrow() {
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    document.getElementById('date-input').value = tomorrow;
-    loadTrips();
+    loadTrips(); // Загружаем завтра, кнопка сама скроется/сменит текст
 }
 
 // ========== ДЕЙСТВИЯ ==========
@@ -206,6 +217,7 @@ let rejectState = {
     pointReasons: {},
     trip: null,
     reasons: { trip: [], route: [], point: [] },
+    hadRejections: false,
 };
 
 async function rejectTrip(tripId) {
@@ -214,7 +226,6 @@ async function rejectTrip(tripId) {
     const trip = trips.find(t => t.id === tripId);
     if (!trip) return alert('Рейс не найден');
 
-    // Предзаполняем уже отклонённые элементы
     const preSelectedRoutes = new Set();
     const preSelectedPoints = new Set();
     const preRouteReasons = {};
@@ -242,6 +253,7 @@ async function rejectTrip(tripId) {
         pointReasons: prePointReasons,
         trip: trip,
         reasons: { trip: [], route: [], point: [] },
+        hadRejections: preSelectedRoutes.size > 0 || preSelectedPoints.size > 0,
     };
 
     try {
@@ -378,11 +390,37 @@ function togglePoint(pointId, checked) {
 }
 
 function goToReasons() {
-    if (rejectState.selectedRoutes.size === 0 && rejectState.selectedPoints.size === 0) {
+    const nothingSelected = rejectState.selectedRoutes.size === 0 && rejectState.selectedPoints.size === 0;
+
+    if (nothingSelected) {
+        if (rejectState.hadRejections) {
+            submitEmptyReject();
+            return;
+        }
         return alert('Выберите хотя бы один маршрут или точку');
     }
     rejectState.step = 3;
     renderRejectModal();
+}
+
+async function submitEmptyReject() {
+    if (!confirm('Снять все отказы и подтвердить весь рейс?')) return;
+
+    try {
+        const resp = await apiFetch(`/api/v1/me/trips/${rejectState.tripId}/confirm`, {
+            method: 'POST',
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json();
+            return alert(`Ошибка: ${err.detail || 'Неизвестная'}`);
+        }
+
+        closeRejectModal();
+        await loadTrips();
+    } catch (e) {
+        alert(`Сетевая ошибка: ${e.message}`);
+    }
 }
 
 function renderReasonsSelection() {
