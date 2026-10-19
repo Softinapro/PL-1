@@ -11,6 +11,8 @@ class UserAdmin(ModelView, model=User):
         User.phone,
         User.full_name,
         User.role,
+        User.code,
+        User.max_user_id,
         User.is_active,
         User.is_archived,
         User.created_at,
@@ -21,6 +23,8 @@ class UserAdmin(ModelView, model=User):
         User.phone: "Телефон",
         User.full_name: "ФИО",
         User.role: "Роль",
+        User.code: "Код 1С",
+        User.max_user_id: "ID в MAX",
         User.is_active: "Активен",
         User.is_archived: "В архиве",
         User.created_at: "Дата создания",
@@ -41,7 +45,7 @@ class UserAdmin(ModelView, model=User):
             (False, "❌ Нет"),
         ],
     }
-    column_searchable_list = [User.phone, User.full_name]
+    column_searchable_list = [User.phone, User.full_name, User.code, User.max_user_id]
     column_filters = [User.role, User.is_active, User.is_archived]
     column_sortable_list = [User.id, User.created_at, User.full_name]
     column_default_sort = [(User.created_at, True)]
@@ -85,8 +89,10 @@ class TripAdmin(ModelView, model=Trip):
         Trip.id,
         Trip.driver_id,
         Trip.logist_id,
+        Trip.logist_code,
         Trip.date,
         Trip.status,
+        Trip.info,
         Trip.sent_at,
         Trip.created_at,
         Trip.updated_at,
@@ -95,8 +101,10 @@ class TripAdmin(ModelView, model=Trip):
         Trip.id: "ID",
         Trip.driver_id: "Водитель",
         Trip.logist_id: "Логист",
+        Trip.logist_code: "Код логиста",
         Trip.date: "Дата рейса",
         Trip.status: "Статус",
+        Trip.info: "Инфо",
         Trip.sent_at: "Отправлен в MAX",
         Trip.created_at: "Дата создания",
         Trip.updated_at: "Дата обновления",
@@ -110,7 +118,7 @@ class TripAdmin(ModelView, model=Trip):
             ("rejected", "❌ Отклонён"),
         ]
     }
-    column_searchable_list = [Trip.driver_id, Trip.logist_id]
+    column_searchable_list = [Trip.driver_id, Trip.logist_id, Trip.logist_code]
     column_filters = [Trip.status, Trip.date]
     column_sortable_list = [Trip.id, Trip.date, Trip.created_at]
     column_default_sort = [(Trip.date, True)]
@@ -124,7 +132,8 @@ class RouteAdmin(ModelView, model=Route):
         Route.id,
         Route.trip_id,
         Route.order_number,
-        Route.status,        
+        Route.name,
+        Route.status,
         Route.rejection_reason,
         Route.created_at,
         Route.updated_at,
@@ -133,7 +142,8 @@ class RouteAdmin(ModelView, model=Route):
         Route.id: "ID",
         Route.trip_id: "Рейс",
         Route.order_number: "Порядковый номер",
-        Route.status: "Статус",        
+        Route.name: "Название",
+        Route.status: "Статус",
         Route.rejection_reason: "Причина отказа",
         Route.created_at: "Дата создания",
         Route.updated_at: "Дата обновления",
@@ -142,9 +152,11 @@ class RouteAdmin(ModelView, model=Route):
         Route.status: [
             ("pending", "⏳ Ожидает"),
             ("confirmed", "✅ Подтверждён"),
+            ("partial", "⚠️ Частично"),
             ("rejected", "❌ Отклонён"),
         ]
     }
+    column_searchable_list = [Route.name, Route.rejection_reason]
     column_filters = [Route.status, Route.trip_id]
     column_sortable_list = [Route.id, Route.order_number, Route.created_at]
     name = "Маршрут"
@@ -156,6 +168,7 @@ class PointAdmin(ModelView, model=Point):
     column_list = [
         Point.id,
         Point.route_id,
+        Point.code,
         Point.order_number,
         Point.address,
         Point.status,
@@ -166,6 +179,7 @@ class PointAdmin(ModelView, model=Point):
     column_labels = {
         Point.id: "ID",
         Point.route_id: "Маршрут",
+        Point.code: "Код точки",
         Point.order_number: "Порядковый номер",
         Point.address: "Адрес",
         Point.status: "Статус",
@@ -180,6 +194,7 @@ class PointAdmin(ModelView, model=Point):
             ("rejected", "❌ Отклонена"),
         ]
     }
+    column_searchable_list = [Point.code, Point.address, Point.rejection_reason]
     column_filters = [Point.status, Point.route_id]
     column_sortable_list = [Point.id, Point.order_number, Point.created_at]
     name = "Торговая точка"
