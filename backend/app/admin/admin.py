@@ -3,6 +3,60 @@ from app.models import (
     User, DriverProfile, Trip, Route, Point, MaxWebhookLog,
     RejectionReason, RejectionScope,
 )
+from app.models.user import UserRole
+from app.models.trip import TripStatus
+from app.models.route import RouteStatus
+from app.models.point import PointStatus
+
+# ========== ФОРМАТТЕРЫ ДЛЯ СТАТУСОВ ==========
+
+def format_trip_status(model, attr):
+    mapping = {
+        TripStatus.PENDING: "⏳ Ожидает",
+        TripStatus.SENT: "📨 Отправлен",
+        TripStatus.CONFIRMED: "✅ Подтверждён",
+        TripStatus.PARTIAL: "⚠️ Частично",
+        TripStatus.REJECTED: "❌ Отклонён",
+    }
+    return mapping.get(model.status, model.status.value)
+
+
+def format_route_status(model, attr):
+    mapping = {
+        RouteStatus.PENDING: "⏳ Ожидает",
+        RouteStatus.CONFIRMED: "✅ Подтверждён",
+        RouteStatus.PARTIAL: "⚠️ Частично",
+        RouteStatus.REJECTED: "❌ Отклонён",
+    }
+    return mapping.get(model.status, model.status.value)
+
+
+def format_point_status(model, attr):
+    mapping = {
+        PointStatus.PENDING: "⏳ Ожидает",
+        PointStatus.CONFIRMED: "✅ Подтверждена",
+        PointStatus.REJECTED: "❌ Отклонена",
+    }
+    return mapping.get(model.status, model.status.value)
+
+
+def format_user_role(model, attr):
+    mapping = {
+        UserRole.ADMIN: "Администратор",
+        UserRole.LOGIST: "Логист",
+        UserRole.DRIVER: "Водитель",
+    }
+    return mapping.get(model.role, model.role.value)
+
+
+def format_rejection_scope(model, attr):
+    mapping = {
+        RejectionScope.TRIP: "🚛 Рейс",
+        RejectionScope.ROUTE: "🛣 Маршрут",
+        RejectionScope.POINT: "📍 Точка",
+    }
+    return mapping.get(model.scope, model.scope.value)
+
 
 # ========== ПОЛЬЗОВАТЕЛИ ==========
 class UserAdmin(ModelView, model=User):
@@ -30,11 +84,14 @@ class UserAdmin(ModelView, model=User):
         User.created_at: "Дата создания",
         User.updated_at: "Дата обновления",
     }
+    column_formatters = {
+        User.role: format_user_role,
+    }
     column_choices = {
         User.role: [
-            ("admin", "Администратор"),
-            ("logist", "Логист"),
-            ("driver", "Водитель"),
+            (UserRole.ADMIN, "Администратор"),
+            (UserRole.LOGIST, "Логист"),
+            (UserRole.DRIVER, "Водитель"),
         ],
         User.is_active: [
             (True, "✅ Да"),
@@ -52,6 +109,7 @@ class UserAdmin(ModelView, model=User):
     name = "Пользователь"
     name_plural = "Пользователи"
     icon = "fa-solid fa-user"
+
 
 # ========== ПРОФИЛИ ВОДИТЕЛЕЙ ==========
 class DriverProfileAdmin(ModelView, model=DriverProfile):
@@ -83,6 +141,7 @@ class DriverProfileAdmin(ModelView, model=DriverProfile):
     name_plural = "Профили водителей"
     icon = "fa-solid fa-id-card"
 
+
 # ========== РЕЙСЫ ==========
 class TripAdmin(ModelView, model=Trip):
     column_list = [
@@ -109,13 +168,16 @@ class TripAdmin(ModelView, model=Trip):
         Trip.created_at: "Дата создания",
         Trip.updated_at: "Дата обновления",
     }
+    column_formatters = {
+        Trip.status: format_trip_status,
+    }
     column_choices = {
         Trip.status: [
-            ("pending", "⏳ Ожидает"),
-            ("sent", "📨 Отправлен"),
-            ("confirmed", "✅ Подтверждён"),
-            ("partial", "⚠️ Частично"),
-            ("rejected", "❌ Отклонён"),
+            (TripStatus.PENDING, "⏳ Ожидает"),
+            (TripStatus.SENT, "📨 Отправлен"),
+            (TripStatus.CONFIRMED, "✅ Подтверждён"),
+            (TripStatus.PARTIAL, "⚠️ Частично"),
+            (TripStatus.REJECTED, "❌ Отклонён"),
         ]
     }
     column_searchable_list = [Trip.driver_id, Trip.logist_id, Trip.logist_code]
@@ -125,6 +187,7 @@ class TripAdmin(ModelView, model=Trip):
     name = "Рейс"
     name_plural = "Рейсы"
     icon = "fa-solid fa-truck"
+
 
 # ========== МАРШРУТЫ ==========
 class RouteAdmin(ModelView, model=Route):
@@ -148,12 +211,15 @@ class RouteAdmin(ModelView, model=Route):
         Route.created_at: "Дата создания",
         Route.updated_at: "Дата обновления",
     }
+    column_formatters = {
+        Route.status: format_route_status,
+    }
     column_choices = {
         Route.status: [
-            ("pending", "⏳ Ожидает"),
-            ("confirmed", "✅ Подтверждён"),
-            ("partial", "⚠️ Частично"),
-            ("rejected", "❌ Отклонён"),
+            (RouteStatus.PENDING, "⏳ Ожидает"),
+            (RouteStatus.CONFIRMED, "✅ Подтверждён"),
+            (RouteStatus.PARTIAL, "⚠️ Частично"),
+            (RouteStatus.REJECTED, "❌ Отклонён"),
         ]
     }
     column_searchable_list = [Route.name, Route.rejection_reason]
@@ -162,6 +228,7 @@ class RouteAdmin(ModelView, model=Route):
     name = "Маршрут"
     name_plural = "Маршруты"
     icon = "fa-solid fa-route"
+
 
 # ========== ТОРГОВЫЕ ТОЧКИ ==========
 class PointAdmin(ModelView, model=Point):
@@ -187,11 +254,14 @@ class PointAdmin(ModelView, model=Point):
         Point.created_at: "Дата создания",
         Point.updated_at: "Дата обновления",
     }
+    column_formatters = {
+        Point.status: format_point_status,
+    }
     column_choices = {
         Point.status: [
-            ("pending", "⏳ Ожидает"),
-            ("confirmed", "✅ Подтверждена"),
-            ("rejected", "❌ Отклонена"),
+            (PointStatus.PENDING, "⏳ Ожидает"),
+            (PointStatus.CONFIRMED, "✅ Подтверждена"),
+            (PointStatus.REJECTED, "❌ Отклонена"),
         ]
     }
     column_searchable_list = [Point.code, Point.address, Point.rejection_reason]
@@ -200,6 +270,7 @@ class PointAdmin(ModelView, model=Point):
     name = "Торговая точка"
     name_plural = "Торговые точки"
     icon = "fa-solid fa-location-dot"
+
 
 # ========== ПРИЧИНЫ ОТКАЗА ==========
 class RejectionReasonAdmin(ModelView, model=RejectionReason):
@@ -219,6 +290,9 @@ class RejectionReasonAdmin(ModelView, model=RejectionReason):
         RejectionReason.created_at: "Дата создания",
         RejectionReason.updated_at: "Дата обновления",
     }
+    column_formatters = {
+        RejectionReason.scope: format_rejection_scope,
+    }
     column_choices = {
         RejectionReason.scope: [
             (RejectionScope.TRIP, "🚛 Рейс (отказ от всего)"),
@@ -237,6 +311,7 @@ class RejectionReasonAdmin(ModelView, model=RejectionReason):
     name = "Причина отказа"
     name_plural = "Причины отказа"
     icon = "fa-solid fa-circle-xmark"
+
 
 # ========== ЛОГИ MAX ==========
 class MaxWebhookLogAdmin(ModelView, model=MaxWebhookLog):
@@ -270,10 +345,11 @@ class MaxWebhookLogAdmin(ModelView, model=MaxWebhookLog):
     name_plural = "Логи MAX"
     icon = "fa-solid fa-list"
 
+
 # ========== СПИСОК ВСЕХ АДМИНОК ==========
 admin_views = [
     UserAdmin,
-    DriverProfileAdmin,
+    # DriverProfileAdmin,  # Скрыт
     TripAdmin,
     RouteAdmin,
     PointAdmin,

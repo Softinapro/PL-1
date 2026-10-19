@@ -33,7 +33,7 @@ async def health_check():
 app.include_router(v1_router, prefix="/api/v1")
 
 # ========== НАСТРОЙКА АДМИНКИ SQLADMIN ==========
-admin = Admin(app, engine, authentication_backend=authentication_backend)
+admin = Admin(app, engine, authentication_backend=authentication_backend,)
 
 # Регистрируем все модели
 for view in admin_views:
