@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
 from app.config import settings
 from app.api.v1.router import router as v1_router
@@ -36,9 +37,12 @@ admin = Admin(app, engine, authentication_backend=authentication_backend)
 
 # Регистрируем все модели
 for view in admin_views:
-    admin.add_view(view)  # <--- ИЗМЕНЕНО: add_view
+    admin.add_view(view)
 
 # Админка автоматически доступна по /admin
 # Добавляем webhook роутер отдельно (без префикса /api/v1)
 from app.api.v1.endpoints.webhook import router as webhook_router
 app.include_router(webhook_router)
+
+# ========== СТАТИКА (фронтенд Mini App) ==========
+app.mount("/static", StaticFiles(directory="static"), name="static")

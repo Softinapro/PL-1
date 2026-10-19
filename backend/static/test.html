@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Test</title>
+</head>
+
+<body style="background:white; color:black; padding:20px;">
+    <h1>Привет! Это тест.</h1>
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
+    <script>
+        document.body.insertAdjacentHTML('beforeend', '<p>WebApp: ' + (window.WebApp ? 'ЕСТЬ' : 'НЕТ') + '</p>');
+        if (window.WebApp) {
+            window.WebApp.ready();
+            document.body.insertAdjacentHTML('beforeend', '<p>InitData: ' + (window.WebApp.initData ? 'ЕСТЬ' : 'НЕТ') + '</p>');
+        }
+    </script>
+</body>
+
+</html>

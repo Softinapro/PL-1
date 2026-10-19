@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PL-1</title>
+    <link rel="stylesheet" href="/static/style.css?v=6">
+    <script src="https://st.max.ru/js/max-web-app.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Панель выбора даты -->
+        <div id="date-controls" class="date-picker-wrapper hidden">
+            <input type="date" id="date-input" onchange="onDateChange()">
+            <button class="btn btn-secondary" onclick="resetToTomorrow()">Завтра</button>
+        </div>
+
+        <p id="status">Загрузка...</p>
+        <div id="trip-container" class="hidden"></div>
+    </div>
+
+    <!-- Модальное окно для отказа -->
+    <div id="reject-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Отказ от рейса</h2>
+                <button class="close-btn" onclick="closeRejectModal()">×</button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+            <div id="modal-footer" class="modal-footer"></div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=5"></script>
+</body>
+
+</html>
