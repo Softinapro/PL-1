@@ -51,6 +51,17 @@ function renderTrip(trip) {
     const routeRows = trip.routes
         .sort((a, b) => a.order_number - b.order_number)
         .map(route => {
+            // Считаем общий вес для этого маршрута
+            let routeWeight = 0;
+            let hasWeight = false;
+            route.points.forEach(p => {
+                if (p.weight) {
+                    routeWeight += parseFloat(p.weight);
+                    hasWeight = true;
+                }
+            });
+            const weightStr = hasWeight ? routeWeight.toFixed(3) + ' кг' : '—';
+
             const points = route.points
                 .sort((a, b) => a.order_number - b.order_number)
                 .map(point => `
@@ -71,7 +82,7 @@ function renderTrip(trip) {
                             <span class="icon">${ROUTE_ICONS[route.status] || '—'}</span>
                             ${escapeHtml(route.name || `Маршрут #${route.order_number}`)}
                         </span>
-                        <span>${route.points.length} точек</span>
+                        <span>${route.points.length} точек, ${weightStr}</span>
                     </div>
                     ${points}
                 </div>

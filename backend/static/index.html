@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PL-1</title>
-    <link rel="stylesheet" href="/static/style.css?v=8">
+    <link rel="stylesheet" href="/static/style.css?v=9">
     <script src="https://st.max.ru/js/max-web-app.js"></script>
 </head>
 
@@ -14,7 +14,7 @@
         <!-- Панель выбора даты -->
         <div id="date-controls" class="date-picker-wrapper hidden">
             <input type="date" id="date-input" onchange="onDateChange()">
-            <button class="btn btn-secondary" onclick="resetToTomorrow()">Завтра</button>
+            <button id="tomorrow-btn" class="btn btn-secondary" onclick="resetToTomorrow()">Завтра</button>
         </div>
 
         <p id="status">Загрузка...</p>
@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=5"></script>
+    <script src="/static/app.js?v=8"></script>
 </body>
 
 </html>
