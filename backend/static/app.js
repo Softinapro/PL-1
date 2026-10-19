@@ -45,13 +45,17 @@ function escapeHtml(s) {
     }[c]));
 }
 
+// ========== СОСТОЯНИЕ ВЫБОРА ==========
+let selectionMode = false;
+let selectedItems = { routes: new Set(), points: new Set() };
+let currentTripData = null;
+
 // ========== РЕНДЕР ==========
 
 function renderTrip(trip) {
     const routeRows = trip.routes
         .sort((a, b) => a.order_number - b.order_number)
-        .map(route => {
-            // Считаем общий вес для этого маршрута
+        .map((route, index) => {
             let routeWeight = 0;
             let hasWeight = false;
             route.points.forEach(p => {
@@ -62,10 +66,20 @@ function renderTrip(trip) {
             });
             const weightStr = hasWeight ? routeWeight.toFixed(3) + ' кг' : '—';
 
-            const points = route.points
+            const routeChecked = selectedItems.routes.has(route.id);
+
+            const pointsHtml = route.points
                 .sort((a, b) => a.order_number - b.order_number)
-                .map(point => `
+                .map(point => {
+                    const pointChecked = selectedItems.points.has(point.id);
+                    return `
                     <div class="point-row">
+                        ${selectionMode ? `
+                            <input type="checkbox" class="select-checkbox" 
+                                   ${pointChecked ? 'checked' : ''}
+                                   ${routeChecked ? 'disabled' : ''}
+                                   onchange="togglePointSelection(${point.id}, this.checked)">
+                        ` : ''}
                         <span class="point-icon">${POINT_ICONS[point.status] || '—'}</span>
                         <div class="point-info">
                             <div class="point-address">${escapeHtml(point.address)}</div>
@@ -73,26 +87,39 @@ function renderTrip(trip) {
                             ${point.rejection_reason ? `<div class="point-reason">${escapeHtml(point.rejection_reason)}</div>` : ''}
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
+
+            const isCollapsed = selectionMode ? false : index !== 0;
 
             return `
-                <div class="route-block">
-                    <div class="route-header">
-                        <span>
+                <div class="route-block ${isCollapsed ? 'collapsed' : ''} ${routeChecked ? 'selected' : ''}" data-route-id="${route.id}">
+                    <div class="route-header" ${selectionMode ? '' : `onclick="toggleRouteCollapse(${route.id})"`}>
+                        ${selectionMode ? `
+                            <input type="checkbox" class="select-checkbox" 
+                                   ${routeChecked ? 'checked' : ''}
+                                   onchange="toggleRouteSelection(${route.id}, this.checked)">
+                        ` : ''}
+                        <div class="route-title-group">
                             <span class="icon">${ROUTE_ICONS[route.status] || '—'}</span>
-                            ${escapeHtml(route.name || `Маршрут #${route.order_number}`)}
-                        </span>
-                        <span>${route.points.length} точек, ${weightStr}</span>
+                            <span>${escapeHtml(route.name || `Маршрут #${route.order_number}`)}</span>
+                        </div>
+                        <span class="route-stats">${route.points.length} точек, ${weightStr}</span>
+                        ${selectionMode ? '' : '<span class="route-toggle-icon">▼</span>'}
                     </div>
-                    ${points}
+                    <div class="route-points">
+                        ${pointsHtml}
+                    </div>
                 </div>
             `;
         }).join('');
 
-    const actions = trip.is_actionable ? `
+    const actions = trip.is_actionable && !selectionMode ? `
         <div class="actions">
             <button class="btn btn-confirm" onclick="confirmTrip(${trip.id})">✅ Подтвердить всё</button>
             <button class="btn btn-reject" onclick="rejectTrip(${trip.id})">🚫 Отказаться</button>
+        </div>
+        <div class="actions" style="margin-top:8px;">
+            <button class="btn btn-secondary" onclick="enterSelectionMode(${trip.id})">✏️ Выбрать элементы</button>
         </div>
     ` : '';
 
@@ -101,7 +128,7 @@ function renderTrip(trip) {
     });
 
     return `
-        <div class="trip-card">
+        <div class="trip-card" data-trip-id="${trip.id}">
             <div class="trip-header">
                 <div class="trip-title">Рейс на ${dateStr}</div>
                 <div class="trip-status ${trip.status}">${TRIP_STATUS_LABELS[trip.status] || trip.status}</div>
@@ -115,6 +142,14 @@ function renderTrip(trip) {
     `;
 }
 
+function toggleRouteCollapse(routeId) {
+    if (selectionMode) return;
+    const block = document.querySelector(`.route-block[data-route-id="${routeId}"]`);
+    if (block) {
+        block.classList.toggle('collapsed');
+    }
+}
+
 function renderNoTrips(date) {
     const dateStr = new Date(date).toLocaleDateString('ru-RU', {
         day: '2-digit', month: '2-digit', year: 'numeric'
@@ -124,6 +159,109 @@ function renderNoTrips(date) {
             <p>На ${dateStr} рейсов нет.</p>
         </div>
     `;
+}
+
+// ========== ЛОГИКА РЕЖИМА ВЫБОРА ==========
+
+function enterSelectionMode(tripId) {
+    apiFetch('/api/v1/me/trips').then(r => r.json()).then(trips => {
+        const trip = trips.find(t => t.id === tripId);
+        if (!trip) return alert('Рейс не найден');
+
+        currentTripData = trip;
+        selectionMode = true;
+        selectedItems = { routes: new Set(), points: new Set() };
+
+        document.body.classList.add('selection-active');
+        tripContainer.classList.add('selection-mode');
+        document.getElementById('floating-actions').classList.remove('hidden');
+
+        updateSelectionUI();
+        tripContainer.innerHTML = renderTrip(currentTripData);
+    });
+}
+
+function exitSelectionMode() {
+    selectionMode = false;
+    selectedItems = { routes: new Set(), points: new Set() };
+    currentTripData = null;
+
+    document.body.classList.remove('selection-active');
+    tripContainer.classList.remove('selection-mode');
+    document.getElementById('floating-actions').classList.add('hidden');
+
+    loadTrips();
+}
+
+function toggleRouteSelection(routeId, checked) {
+    if (checked) {
+        selectedItems.routes.add(routeId);
+        const route = currentTripData.routes.find(r => r.id === routeId);
+        route.points.forEach(p => selectedItems.points.delete(p.id));
+    } else {
+        selectedItems.routes.delete(routeId);
+    }
+    updateSelectionUI();
+    tripContainer.innerHTML = renderTrip(currentTripData);
+}
+
+function togglePointSelection(pointId, checked) {
+    if (checked) {
+        selectedItems.points.add(pointId);
+    } else {
+        selectedItems.points.delete(pointId);
+    }
+    updateSelectionUI();
+    tripContainer.innerHTML = renderTrip(currentTripData);
+}
+
+function updateSelectionUI() {
+    const routesCount = selectedItems.routes.size;
+    const pointsCount = selectedItems.points.size;
+    const total = routesCount + pointsCount;
+
+    let text = 'Выбрано: ';
+    if (routesCount > 0) text += `${routesCount} маршр., `;
+    if (pointsCount > 0) text += `${pointsCount} точек, `;
+    if (total === 0) text += '0';
+    else text = text.slice(0, -2);
+
+    document.getElementById('selection-info').textContent = text;
+}
+
+async function submitSelectedReject() {
+    if (selectedItems.routes.size === 0 && selectedItems.points.size === 0) {
+        return alert('Выберите хотя бы один элемент');
+    }
+
+    rejectState = {
+        tripId: currentTripData.id,
+        step: 3,
+        type: 'partial',
+        selectedRoutes: new Set(selectedItems.routes),
+        selectedPoints: new Set(selectedItems.points),
+        commonRouteReason: null,
+        commonPointReason: null,
+        trip: currentTripData,
+        reasons: { trip: [], route: [], point: [] },
+        hadRejections: false,
+    };
+
+    try {
+        const [tripReasons, routeReasons, pointReasons] = await Promise.all([
+            apiFetch('/api/v1/me/rejection-reasons?scope=trip').then(r => r.json()),
+            apiFetch('/api/v1/me/rejection-reasons?scope=route').then(r => r.json()),
+            apiFetch('/api/v1/me/rejection-reasons?scope=point').then(r => r.json()),
+        ]);
+        rejectState.reasons.trip = tripReasons;
+        rejectState.reasons.route = routeReasons;
+        rejectState.reasons.point = pointReasons;
+    } catch (e) {
+        return alert('Ошибка загрузки причин: ' + e.message);
+    }
+
+    document.getElementById('reject-modal').classList.remove('hidden');
+    renderRejectModal();
 }
 
 // ========== ЗАГРУЗКА ДАННЫХ ==========
@@ -147,7 +285,6 @@ async function loadTrips(date) {
         dateInput.value = date;
     }
 
-    // Меняем текст и состояние кнопки в зависимости от выбранной даты
     if (dateInput.value === tomorrow) {
         tomorrowBtn.textContent = 'Завтра';
         tomorrowBtn.disabled = true;
@@ -192,7 +329,7 @@ function onDateChange() {
 }
 
 function resetToTomorrow() {
-    loadTrips(); // Загружаем завтра, кнопка сама скроется/сменит текст
+    loadTrips();
 }
 
 // ========== ДЕЙСТВИЯ ==========
@@ -224,8 +361,8 @@ let rejectState = {
     type: null,
     selectedRoutes: new Set(),
     selectedPoints: new Set(),
-    routeReasons: {},
-    pointReasons: {},
+    commonRouteReason: null,
+    commonPointReason: null,
     trip: null,
     reasons: { trip: [], route: [], point: [] },
     hadRejections: false,
@@ -239,8 +376,6 @@ async function rejectTrip(tripId) {
 
     const preSelectedRoutes = new Set();
     const preSelectedPoints = new Set();
-    const preRouteReasons = {};
-    const prePointReasons = {};
 
     trip.routes.forEach(route => {
         if (route.status === 'rejected') {
@@ -260,8 +395,8 @@ async function rejectTrip(tripId) {
         type: null,
         selectedRoutes: preSelectedRoutes,
         selectedPoints: preSelectedPoints,
-        routeReasons: preRouteReasons,
-        pointReasons: prePointReasons,
+        commonRouteReason: null,
+        commonPointReason: null,
         trip: trip,
         reasons: { trip: [], route: [], point: [] },
         hadRejections: preSelectedRoutes.size > 0 || preSelectedPoints.size > 0,
@@ -428,7 +563,11 @@ async function submitEmptyReject() {
         }
 
         closeRejectModal();
-        await loadTrips();
+        if (selectionMode) {
+            exitSelectionMode();
+        } else {
+            await loadTrips();
+        }
     } catch (e) {
         alert(`Сетевая ошибка: ${e.message}`);
     }
@@ -437,37 +576,33 @@ async function submitEmptyReject() {
 function renderReasonsSelection() {
     let html = '';
 
-    rejectState.selectedRoutes.forEach(routeId => {
-        const route = rejectState.trip.routes.find(r => r.id === routeId);
+    if (rejectState.selectedRoutes.size > 0) {
         html += `
-            <div style="margin-bottom:12px;">
-                <label>Причина для маршрута "${escapeHtml(route.name || '#' + route.order_number)}":</label>
-                <select class="reason-select" onchange="rejectState.routeReasons[${routeId}] = this.value">
+            <div style="margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:8px;">
+                <label style="display:block; margin-bottom:8px; font-weight:600;">
+                    Причина для всех маршрутов (${rejectState.selectedRoutes.size} шт.):
+                </label>
+                <select class="reason-select" onchange="rejectState.commonRouteReason = this.value">
                     <option value="">-- Без причины --</option>
                     ${rejectState.reasons.route.map(r => `<option value="${r.id}">${escapeHtml(r.text)}</option>`).join('')}
                 </select>
             </div>
         `;
-    });
+    }
 
-    rejectState.selectedPoints.forEach(pointId => {
-        let point = null;
-        for (const r of rejectState.trip.routes) {
-            const p = r.points.find(p => p.id === pointId);
-            if (p) { point = p; break; }
-        }
-        if (!point) return;
-
+    if (rejectState.selectedPoints.size > 0) {
         html += `
-            <div style="margin-bottom:12px;">
-                <label>Причина для точки "${escapeHtml(point.address)}":</label>
-                <select class="reason-select" onchange="rejectState.pointReasons[${pointId}] = this.value">
+            <div style="margin-bottom:16px; padding:12px; background:#f5f5f5; border-radius:8px;">
+                <label style="display:block; margin-bottom:8px; font-weight:600;">
+                    Причина для всех точек (${rejectState.selectedPoints.size} шт.):
+                </label>
+                <select class="reason-select" onchange="rejectState.commonPointReason = this.value">
                     <option value="">-- Без причины --</option>
                     ${rejectState.reasons.point.map(r => `<option value="${r.id}">${escapeHtml(r.text)}</option>`).join('')}
                 </select>
             </div>
         `;
-    });
+    }
 
     return html;
 }
@@ -495,18 +630,23 @@ async function submitReject() {
         const sel = document.getElementById('trip-reason-select');
         payload.trip_reason_id = sel.value ? parseInt(sel.value) : null;
     } else {
+        const routeReasonId = rejectState.commonRouteReason
+            ? parseInt(rejectState.commonRouteReason)
+            : null;
         rejectState.selectedRoutes.forEach(routeId => {
-            const reasonId = rejectState.routeReasons[routeId];
             payload.routes.push({
                 route_id: routeId,
-                reason_id: reasonId ? parseInt(reasonId) : null
+                reason_id: routeReasonId
             });
         });
+
+        const pointReasonId = rejectState.commonPointReason
+            ? parseInt(rejectState.commonPointReason)
+            : null;
         rejectState.selectedPoints.forEach(pointId => {
-            const reasonId = rejectState.pointReasons[pointId];
             payload.points.push({
                 point_id: pointId,
-                reason_id: reasonId ? parseInt(reasonId) : null
+                reason_id: pointReasonId
             });
         });
     }
@@ -524,7 +664,11 @@ async function submitReject() {
         }
 
         closeRejectModal();
-        await loadTrips();
+        if (selectionMode) {
+            exitSelectionMode();
+        } else {
+            await loadTrips();
+        }
     } catch (e) {
         alert(`Сетевая ошибка: ${e.message}`);
     }

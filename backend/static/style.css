@@ -198,23 +198,17 @@ body {
     font-size: 15px;
 }
 
-/* Принудительно задаем цвета для контейнера, чтобы он не сливался с фоном */
 #app {
     background: transparent;
     color: #1a1a1a;
-    /* Темный текст для светлой темы */
 }
 
-/* Если MAX передает тему через класс или data-атрибут, мы можем это перехватить.
-   Но проще задать фон самой карточке, чтобы она всегда была видна. */
 .trip-card {
     background: #ffffff;
     color: #1a1a1a;
-    /* Добавим тень, чтобы карточка выделялась на любом фоне */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Адаптация под темную тему (если браузер/WebView поддерживает) */
 @media (prefers-color-scheme: dark) {
     .trip-card {
         background: #2a2a2a;
@@ -248,7 +242,6 @@ body {
     background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: flex-end;
-    /* На телефоне удобнее снизу */
     justify-content: center;
     z-index: 1000;
 }
@@ -299,7 +292,6 @@ body {
     gap: 12px;
 }
 
-/* Элементы выбора */
 .select-item {
     display: flex;
     align-items: flex-start;
@@ -335,7 +327,6 @@ body {
     font-size: 14px;
 }
 
-/* Тёмная тема для модалки */
 @media (prefers-color-scheme: dark) {
     .modal-content {
         background: #2a2a2a;
@@ -363,5 +354,217 @@ body {
         background: #333;
         color: #fff;
         border-color: #555;
+    }
+}
+
+/* Сворачивание маршрутов */
+.route-header {
+    cursor: pointer;
+    user-select: none;
+    padding: 10px 12px;
+    margin: -12px -12px 8px -12px;
+    border-radius: 8px 8px 0 0;
+    transition: background 0.15s;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.route-header:hover {
+    background: #f0f0f0;
+}
+
+.route-title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.route-stats {
+    font-size: 14px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.route-toggle-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 16px;
+    color: #555;
+    font-weight: bold;
+    padding: 4px;
+    border-radius: 4px;
+    background: #e0e0e0;
+}
+
+.route-block.collapsed .route-toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.route-block.collapsed .route-points {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .route-header:hover {
+        background: #444;
+    }
+
+    .route-toggle-icon {
+        color: #fff;
+        background: #555;
+    }
+
+    .route-stats {
+        color: #aaa;
+    }
+}
+
+/* === РЕЖИМ ВЫБОРА === */
+
+/* Общий стиль маршрута */
+.selection-mode .route-block {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    padding: 0;
+    /* Убираем старый padding */
+    background: #fff;
+    overflow: hidden;
+}
+
+/* Если маршрут выбран — меняем цвет рамки */
+.selection-mode .route-block.selected {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Заголовок маршрута — выделенный фон */
+.selection-mode .route-header {
+    background: #f0f4ff;
+    border-bottom: 1px solid #d0d0d0;
+    padding: 12px;
+    margin: 0;
+    border-radius: 0;
+    cursor: default;
+}
+
+.selection-mode .route-block.selected .route-header {
+    background: #ffe5e5;
+}
+
+/* Точки внутри маршрута — с отступом и другим фоном */
+.selection-mode .route-points {
+    padding: 0 12px;
+    background: #fafafa;
+}
+
+/* Строка точки */
+.selection-mode .point-row {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.selection-mode .point-row:last-child {
+    border-bottom: none;
+}
+
+/* Чекбоксы */
+.selection-mode .route-header .select-checkbox {
+    width: 22px;
+    height: 22px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.selection-mode .point-row .select-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+/* Название маршрута */
+.selection-mode .route-title-group {
+    font-weight: bold;
+    font-size: 16px;
+    color: #1a1a1a;
+}
+
+/* Плавающая панель */
+.floating-actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #eee;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 500;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.floating-actions #selection-info {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.floating-actions .btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    flex: 0 0 auto;
+}
+
+body.selection-active {
+    padding-bottom: 80px;
+}
+
+/* Тёмная тема */
+@media (prefers-color-scheme: dark) {
+    .selection-mode .route-block {
+        background: #2a2a2a;
+        border-color: #444;
+    }
+
+    .selection-mode .route-block.selected {
+        border-color: #ef4444;
+    }
+
+    .selection-mode .route-header {
+        background: #333;
+        border-bottom-color: #555;
+        color: #fff;
+    }
+
+    .selection-mode .route-block.selected .route-header {
+        background: #4a2020;
+    }
+
+    .selection-mode .route-points {
+        background: #222;
+    }
+
+    .selection-mode .point-row {
+        border-bottom-color: #444;
+    }
+
+    .selection-mode .route-title-group {
+        color: #fff;
+    }
+
+    .floating-actions {
+        background: #2a2a2a;
+        border-top-color: #444;
     }
 }
