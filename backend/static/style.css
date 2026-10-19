@@ -320,11 +320,22 @@ body {
 
 .reason-select {
     width: 100%;
-    padding: 8px;
+    padding: 14px 12px;
+    /* Увеличили padding, чтобы было выше */
     margin-top: 8px;
     border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    /* Увеличили шрифт для удобства на телефоне */
+    min-height: 50px;
+    /* Гарантированная высота */
+    background-color: #fff;
+    cursor: pointer;
+    appearance: none;
+    /* Убираем стандартную стрелку браузера (опционально) */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -351,9 +362,10 @@ body {
     }
 
     .reason-select {
-        background: #333;
+        background-color: #333;
         color: #fff;
         border-color: #555;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     }
 }
 
