@@ -20,3 +20,10 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserPublic
+
+
+class ContactBindRequest(BaseModel):
+    phone: str
+    auth_date: str
+    user_id: str
+    hash: str

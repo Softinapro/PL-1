@@ -105,3 +105,26 @@ def validate_init_data(
             return None
 
     return result
+
+def validate_contact_hash(
+    phone: str,
+    auth_date: str,
+    user_id: str,
+    received_hash: str,
+    bot_token: str,
+) -> bool:
+    """
+    Проверяет hash от window.WebApp.requestContact().
+    Формула: HMAC_SHA256(key=botToken, msg="authDate=...\nphone=...\nuserId=...")
+    Важно: phone без знака '+'.
+    """
+    clean_phone = phone.lstrip("+")
+    launch_params = f"authDate={auth_date}\nphone={clean_phone}\nuserId={user_id}"
+    
+    signature = hmac.new(
+        key=bot_token.encode(),
+        msg=launch_params.encode(),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, received_hash)

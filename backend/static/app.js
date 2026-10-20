@@ -700,6 +700,9 @@ if (!window.WebApp) {
                 const data = await resp.json();
                 window.__accessToken = data.access_token;
                 await loadTrips();
+            } else if (resp.status === 401) {
+                // Не зарегистрирован — показываем кнопку "Поделиться номером"
+                showContactButton();
             } else {
                 const err = await resp.json();
                 statusEl.textContent = `Ошибка: ${err.detail || 'Неизвестная'}`;
@@ -708,4 +711,53 @@ if (!window.WebApp) {
             statusEl.textContent = `Сетевая ошибка: ${e.message}`;
         }
     })();
+}
+
+function showContactButton() {
+    statusEl.textContent = 'Вы не зарегистрированы. Поделитесь номером телефона, чтобы привязать аккаунт.';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-confirm';
+    btn.textContent = '📱 Поделиться номером';
+    btn.style.marginTop = '16px';
+    btn.style.width = '100%';
+    btn.onclick = requestContactAndBind;
+
+    statusEl.parentNode.insertBefore(btn, statusEl.nextSibling);
+}
+
+async function requestContactAndBind() {
+    if (!window.WebApp.requestContact) {
+        alert('Ваш клиент MAX не поддерживает запрос контакта.');
+        return;
+    }
+
+    try {
+        const contact = await window.WebApp.requestContact();
+        // contact = { phone, authDate, hash, userId }
+
+        const resp = await fetch('/api/v1/auth/max/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: contact.phone,
+                auth_date: contact.authDate,
+                user_id: contact.userId,
+                hash: contact.hash,
+            }),
+        });
+
+        if (resp.ok) {
+            const data = await resp.json();
+            window.__accessToken = data.access_token;
+            // Перезагружаем страницу, чтобы убрать кнопку
+            location.reload();
+        } else {
+            const err = await resp.json();
+            alert(`Ошибка: ${err.detail || 'Неизвестная'}`);
+        }
+    } catch (e) {
+        // Пользователь отказался или ошибка сети
+        alert('Не удалось получить номер: ' + (e.message || e));
+    }
 }
