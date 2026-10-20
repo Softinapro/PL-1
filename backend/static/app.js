@@ -870,3 +870,11 @@ function copyFallbackData() {
         alert('Данные скопированы в буфер обмена');
     });
 }
+
+
+// Выводим имя из MAX
+const initDataUnsafe = window.WebApp.initDataUnsafe || {};
+const user = initDataUnsafe.user || {};
+const userName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Водитель';
+document.getElementById('user-name-display').textContent = userName;
+document.getElementById('user-greeting').classList.remove('hidden');
