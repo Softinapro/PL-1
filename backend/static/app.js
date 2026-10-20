@@ -701,7 +701,6 @@ if (!window.WebApp) {
                 window.__accessToken = data.access_token;
                 await loadTrips();
             } else if (resp.status === 401) {
-                // Не зарегистрирован — показываем кнопку "Поделиться номером"
                 showContactButton();
             } else {
                 const err = await resp.json();
@@ -728,21 +727,41 @@ function showContactButton() {
 
 async function requestContactAndBind() {
     if (!window.WebApp.requestContact) {
-        alert('Ваш клиент MAX не поддерживает запрос контакта.');
+        showFallbackScreen();
         return;
     }
 
     try {
         const contact = await window.WebApp.requestContact();
-        // contact = { phone, authDate, hash, userId }
 
+        // Проверка на ошибку
+        if (contact.error) {
+            console.warn('requestContact error:', contact.error);
+            showFallbackScreen();
+            return;
+        }
+
+        // Сохраняем телефон для fallback
+        window.__lastContactPhone = contact.phone || '—';
+
+        // Берём userId из initDataUnsafe
+        const initDataUnsafe = window.WebApp.initDataUnsafe || {};
+        const userId = initDataUnsafe.user ? initDataUnsafe.user.id : null;
+
+        if (!userId) {
+            console.error('Не удалось получить userId из initData');
+            showFallbackScreen();
+            return;
+        }
+
+        // Отправляем на бэкенд
         const resp = await fetch('/api/v1/auth/max/contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 phone: contact.phone,
                 auth_date: contact.authDate,
-                user_id: contact.userId,
+                user_id: String(userId),
                 hash: contact.hash,
             }),
         });
@@ -750,14 +769,88 @@ async function requestContactAndBind() {
         if (resp.ok) {
             const data = await resp.json();
             window.__accessToken = data.access_token;
-            // Перезагружаем страницу, чтобы убрать кнопку
             location.reload();
         } else {
             const err = await resp.json();
-            alert(`Ошибка: ${err.detail || 'Неизвестная'}`);
+            if (resp.status === 401) {
+                showFallbackScreen();
+            } else {
+                alert(`Ошибка: ${err.detail || 'Неизвестная'}`);
+            }
         }
     } catch (e) {
-        // Пользователь отказался или ошибка сети
-        alert('Не удалось получить номер: ' + (e.message || e));
+        console.warn('requestContact exception:', e);
+        showFallbackScreen();
     }
+}
+
+function showFallbackScreen() {
+    const initDataUnsafe = window.WebApp.initDataUnsafe || {};
+    const user = initDataUnsafe.user || {};
+    const userId = user.id || null;
+    const userName = [user.first_name, user.last_name].filter(Boolean).join(' ') || '—';
+    const userPhone = window.__lastContactPhone || '—';
+
+    const container = document.getElementById('trip-container');
+    container.classList.remove('hidden');
+
+    const copyText = `ID в MAX: ${userId || '—'}\nТелефон: ${userPhone}\nИмя: ${userName}`;
+
+    container.innerHTML = `
+        <div class="trip-card" style="padding: 20px;">
+            <h3 style="margin-bottom: 16px;">Не удалось привязать аккаунт автоматически</h3>
+            <p style="margin-bottom: 16px; color: #666;">
+                Передайте эти данные логисту, чтобы он добавил вас в систему:
+            </p>
+            
+            <div style="margin-bottom: 16px; padding: 16px; background: #f0f0f0; border-radius: 8px;">
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 12px; color: #888;">ID в MAX:</span>
+                    <div style="font-size: 18px; font-weight: bold; font-family: monospace;">${userId || '—'}</div>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 12px; color: #888;">Телефон:</span>
+                    <div style="font-size: 16px; font-weight: 600;">${userPhone}</div>
+                </div>
+                <div>
+                    <span style="font-size: 12px; color: #888;">Имя:</span>
+                    <div style="font-size: 16px;">${escapeHtml(userName)}</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-confirm" style="width: 100%; margin-bottom: 12px;" onclick="copyFallbackData()">
+                📋 Скопировать все данные
+            </button>
+            
+            <p style="font-size: 13px; color: #888; text-align: center; margin-top: 16px;">
+                Перешлите эти данные логисту в MAX или сообщите по телефону.
+            </p>
+        </div>
+    `;
+
+    // Сохраняем текст для копирования
+    window.__fallbackCopyText = copyText;
+
+    // Убираем старую кнопку, если была
+    const oldBtn = statusEl.nextElementSibling;
+    if (oldBtn && oldBtn.tagName === 'BUTTON') {
+        oldBtn.remove();
+    }
+    statusEl.classList.add('hidden');
+}
+
+function copyFallbackData() {
+    const text = window.__fallbackCopyText || '';
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Данные скопированы в буфер обмена');
+    }).catch(() => {
+        // Fallback для старых браузеров
+        const input = document.createElement('textarea');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('Данные скопированы в буфер обмена');
+    });
 }
