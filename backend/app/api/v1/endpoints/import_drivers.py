@@ -13,9 +13,9 @@ router = APIRouter(prefix="/import", tags=["Import"])
 
 
 class DriverImportSchema(BaseModel):
-    code: str          # код из 1С (физлицо)
-    phone: str         # телефон, 9001234567
-    full_name: str     # ФИО
+    code: str  # код из 1С (физлицо)
+    phone: str  # телефон, 9001234567
+    full_name: str  # ФИО
 
 
 @router.post("/drivers")
@@ -27,6 +27,7 @@ async def import_drivers(
     """
     Импорт/обновление справочника водителей из 1С.
     По коду находит водителя, обновляет телефон и ФИО (после валидации).
+    При смене телефона сбрасывает max_user_id (нужна перерегистрация в MAX).
     """
     created = []
     updated = []
@@ -39,16 +40,16 @@ async def import_drivers(
             try:
                 normalized_phone = normalize_phone(driver_data.phone)
             except ValueError as e:
-                errors.append({
-                    "code": driver_data.code,
-                    "error": f"Некорректный телефон: {e}",
-                })
+                errors.append(
+                    {
+                        "code": driver_data.code,
+                        "error": f"Некорректный телефон: {e}",
+                    }
+                )
                 continue
 
             # 2. Ищем пользователя по коду
-            result = await db.execute(
-                select(User).where(User.code == driver_data.code)
-            )
+            result = await db.execute(select(User).where(User.code == driver_data.code))
             user = result.scalar_one_or_none()
 
             if user is None:
@@ -60,35 +61,51 @@ async def import_drivers(
                     role=UserRole.DRIVER,
                 )
                 db.add(user)
-                created.append({
-                    "code": driver_data.code,
-                    "phone": normalized_phone,
-                    "full_name": driver_data.full_name,
-                })
+                created.append(
+                    {
+                        "code": driver_data.code,
+                        "phone": normalized_phone,
+                        "full_name": driver_data.full_name,
+                    }
+                )
 
-            elif user.phone != normalized_phone or user.full_name != driver_data.full_name:
+            elif (
+                user.phone != normalized_phone
+                or user.full_name != driver_data.full_name
+            ):
                 # 4. Что-то изменилось — обновляем
                 old_phone = user.phone
                 old_name = user.full_name
                 user.phone = normalized_phone
                 user.full_name = driver_data.full_name
-                updated.append({
-                    "code": driver_data.code,
-                    "old_phone": old_phone,
-                    "new_phone": normalized_phone,
-                    "old_name": old_name,
-                    "new_name": driver_data.full_name,
-                })
+
+                # Если телефон изменился — сбрасываем привязку к MAX
+                # (водитель сменил аккаунт, нужна перерегистрация)
+                if old_phone != normalized_phone:
+                    user.max_user_id = None
+
+                updated.append(
+                    {
+                        "code": driver_data.code,
+                        "old_phone": old_phone,
+                        "new_phone": normalized_phone,
+                        "old_name": old_name,
+                        "new_name": driver_data.full_name,
+                        "max_user_id_reset": old_phone != normalized_phone,
+                    }
+                )
 
             else:
                 # 5. Ничего не изменилось
                 unchanged.append({"code": driver_data.code})
 
         except Exception as e:
-            errors.append({
-                "code": driver_data.code,
-                "error": str(e),
-            })
+            errors.append(
+                {
+                    "code": driver_data.code,
+                    "error": str(e),
+                }
+            )
 
     await db.commit()
 
