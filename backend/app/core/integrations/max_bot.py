@@ -98,8 +98,7 @@ class MaxBotAPI:
         total_weight: Optional[Decimal] = None,
         is_update: bool = False,
     ) -> dict:
-            
-        """Уведомление о новом рейсе с кнопкой «Посмотреть предложение»."""
+        """Уведомление о новом рейсе со ссылкой на Mini App."""
         
         bot_name = settings.MAX_BOT_NAME
         deep_link = f"https://max.ru/{bot_name}?startapp=trip_{trip_id}"
@@ -121,11 +120,17 @@ class MaxBotAPI:
             f"Точек: {points_count}\n"
             f"{weight_str}\n"
             f"\n"
-            f'👉 <a href="{deep_link}">Открыть в приложении</a>'
+            f"Нажмите кнопку ниже, чтобы открыть приложение и подтвердить рейс."
         )
 
+        # --- СТАРЫЙ ВАРИАНТ (кнопка callback, ведёт в бота) ---
+        # buttons = [
+        #     [{"type": "callback", "text": "📋 Посмотреть предложение", "payload": f"view_trip:{trip_id}"}],
+        # ]
+
+        # --- НОВЫЙ ВАРИАНТ (кнопка-ссылка, ведёт в Mini App) ---
         buttons = [
-            [{"type": "callback", "text": "📋 Посмотреть предложение", "payload": f"view_trip:{trip_id}"}],
+            [{"type": "link", "text": "📱 Открыть приложение", "url": deep_link}],
         ]
 
         return await self.send_message(user_id, text, buttons=buttons)

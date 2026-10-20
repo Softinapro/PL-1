@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import AsyncSessionLocal
+from app.config import settings
 from app.models.user import User
 from app.models.trip import Trip, TripStatus
 from app.models.route import Route, RouteStatus
@@ -34,6 +35,7 @@ def get_active_date() -> date:
 
 
 # ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+
 
 async def find_user_by_max_id(max_user_id: int) -> User | None:
     async with AsyncSessionLocal() as db:
@@ -70,9 +72,7 @@ def format_trip_card(trip: Trip, trip_date: str) -> str:
     routes_count = len(trip.routes)
     points_count = sum(len(r.points) for r in trip.routes)
 
-    weights = [
-        p.weight for r in trip.routes for p in r.points if p.weight is not None
-    ]
+    weights = [p.weight for r in trip.routes for p in r.points if p.weight is not None]
     total_weight = sum(weights) if weights else None
     weight_str = f"{total_weight} кг" if total_weight else "не указан"
 
@@ -211,6 +211,7 @@ async def reject_whole_trip(trip_id: int, reason_text: str | None) -> Trip | Non
 
 # ========== ЭКРАН МАРШРУТОВ ==========
 
+
 def format_routes_choices(trip: Trip, draft: dict) -> str:
     trip_date = trip.date.strftime("%d.%m.%Y")
     selected = draft.get("selected", {}) if draft else {}
@@ -253,33 +254,50 @@ def build_routes_buttons(trip: Trip, draft: dict) -> list:
             continue
 
         if str(route.id) in selected:
-            buttons.append([{
-                "type": "callback",
-                "text": f"❌ {route_name} — снять",
-                "payload": f"reject_route_unpick:{trip.id}:{route.id}",
-            }])
+            buttons.append(
+                [
+                    {
+                        "type": "callback",
+                        "text": f"❌ {route_name} — снять",
+                        "payload": f"reject_route_unpick:{trip.id}:{route.id}",
+                    }
+                ]
+            )
         else:
-            buttons.append([{
-                "type": "callback",
-                "text": f"🚫 {route_name}",
-                "payload": f"reject_route_pick:{trip.id}:{route.id}",
-            }])
+            buttons.append(
+                [
+                    {
+                        "type": "callback",
+                        "text": f"🚫 {route_name}",
+                        "payload": f"reject_route_pick:{trip.id}:{route.id}",
+                    }
+                ]
+            )
 
-    buttons.append([{
-        "type": "callback",
-        "text": "✅ Далее",
-        "payload": f"reject_scope:partial_points:{trip.id}",
-    }])
-    buttons.append([{
-        "type": "callback",
-        "text": "← Назад",
-        "payload": f"reject_start:{trip.id}",
-    }])
+    buttons.append(
+        [
+            {
+                "type": "callback",
+                "text": "✅ Далее",
+                "payload": f"reject_scope:partial_points:{trip.id}",
+            }
+        ]
+    )
+    buttons.append(
+        [
+            {
+                "type": "callback",
+                "text": "← Назад",
+                "payload": f"reject_start:{trip.id}",
+            }
+        ]
+    )
 
     return buttons
 
 
 # ========== ЭКРАН ТОЧЕК ==========
+
 
 def get_available_points(trip: Trip, draft: dict):
     """
@@ -350,33 +368,50 @@ def build_points_buttons(trip: Trip, draft: dict) -> list:
 
     for route, point in available:
         if str(point.id) in selected_points:
-            buttons.append([{
-                "type": "callback",
-                "text": f"❌ {point.address} — снять",
-                "payload": f"reject_point_unpick:{trip.id}:{point.id}",
-            }])
+            buttons.append(
+                [
+                    {
+                        "type": "callback",
+                        "text": f"❌ {point.address} — снять",
+                        "payload": f"reject_point_unpick:{trip.id}:{point.id}",
+                    }
+                ]
+            )
         else:
-            buttons.append([{
-                "type": "callback",
-                "text": f"🚫 {point.address}",
-                "payload": f"reject_point_pick:{trip.id}:{point.id}",
-            }])
+            buttons.append(
+                [
+                    {
+                        "type": "callback",
+                        "text": f"🚫 {point.address}",
+                        "payload": f"reject_point_pick:{trip.id}:{point.id}",
+                    }
+                ]
+            )
 
-    buttons.append([{
-        "type": "callback",
-        "text": "✅ Применить",
-        "payload": f"reject_partial_apply:{trip.id}",
-    }])
-    buttons.append([{
-        "type": "callback",
-        "text": "← Назад",
-        "payload": f"reject_scope:partial:{trip.id}",
-    }])
+    buttons.append(
+        [
+            {
+                "type": "callback",
+                "text": "✅ Применить",
+                "payload": f"reject_partial_apply:{trip.id}",
+            }
+        ]
+    )
+    buttons.append(
+        [
+            {
+                "type": "callback",
+                "text": "← Назад",
+                "payload": f"reject_scope:partial:{trip.id}",
+            }
+        ]
+    )
 
     return buttons
 
 
 # ========== ПРИМЕНЕНИЕ ЧАСТИЧНОГО ОТКАЗА ==========
+
 
 async def apply_partial_reject(trip_id: int, draft: dict) -> Trip | None:
     """
@@ -437,6 +472,7 @@ async def apply_partial_reject(trip_id: int, draft: dict) -> Trip | None:
 
 # ========== ВЕБХУК ==========
 
+
 @router.post("/webhook")
 async def max_webhook(request: Request):
     try:
@@ -455,25 +491,63 @@ async def max_webhook(request: Request):
 
             user = await find_user_by_max_id(max_user_id)
 
+            bot_name = settings.MAX_BOT_NAME
+            deep_link = f"https://max.ru/{bot_name}?startapp=main"
+
+            # --- СТАРЫЙ ВАРИАНТ (закомментирован) ---
+            # if not user:
+            #     await bot.send_message(
+            #         max_user_id,
+            #         f"👋 Здравствуйте, {first_name}!\n\n"
+            #         "❌ Вы не зарегистрированы в системе.\n\n"
+            #         "Обратитесь к логисту, чтобы он добавил вас.",
+            #     )
+            #     return {"status": "ok"}
+            #
+            # await bot.send_message(
+            #     max_user_id,
+            #     f"👋 Здравствуйте, {user.full_name}!\n\n"
+            #     "Вы зарегистрированы в системе как водитель.\n"
+            #     "Выберите действие:",
+            #     buttons=[
+            #         [{"type": "callback", "text": "ℹ️ Помощь", "payload": "help"}],
+            #         [{"type": "callback", "text": "📞 Связаться с логистом", "payload": "contact_logist"}],
+            #     ],
+            # )
+
+            # --- НОВЫЙ ВАРИАНТ (только кнопка на Mini App) ---
             if not user:
                 await bot.send_message(
                     max_user_id,
                     f"👋 Здравствуйте, {first_name}!\n\n"
                     "❌ Вы не зарегистрированы в системе.\n\n"
-                    "Обратитесь к логисту, чтобы он добавил вас.",
+                    "Обратитесь к логисту, чтобы он добавил вас в 1С.",
+                    buttons=[
+                        [
+                            {
+                                "type": "link",
+                                "text": "📱 Открыть приложение",
+                                "url": deep_link,
+                            }
+                        ]
+                    ],
                 )
-                return {"status": "ok"}
-
-            await bot.send_message(
-                max_user_id,
-                f"👋 Здравствуйте, {user.full_name}!\n\n"
-                "Вы зарегистрированы в системе как водитель.\n"
-                "Выберите действие:",
-                buttons=[
-                    [{"type": "callback", "text": "ℹ️ Помощь", "payload": "help"}],
-                    [{"type": "callback", "text": "📞 Связаться с логистом", "payload": "contact_logist"}],
-                ],
-            )
+            else:
+                await bot.send_message(
+                    max_user_id,
+                    f"👋 Здравствуйте, {user.full_name}!\n\n"
+                    "Все действия с рейсами теперь в мини-приложении.\n"
+                    "Нажмите кнопку ниже, чтобы открыть его.",
+                    buttons=[
+                        [
+                            {
+                                "type": "link",
+                                "text": "📱 Открыть приложение",
+                                "url": deep_link,
+                            }
+                        ]
+                    ],
+                )
 
         # ========== 2. CALLBACK ==========
         elif data.get("update_type") == "message_callback":
@@ -501,8 +575,7 @@ async def max_webhook(request: Request):
             elif payload == "contact_logist":
                 await bot.send_message(
                     max_user_id,
-                    "📞 Запрос отправлен логисту.\n"
-                    "Ожидайте, скоро с вами свяжутся.",
+                    "📞 Запрос отправлен логисту.\n" "Ожидайте, скоро с вами свяжутся.",
                 )
 
             # ---------- view_trip:{trip_id} ----------
@@ -529,8 +602,20 @@ async def max_webhook(request: Request):
                         await bot.send_message(max_user_id, text)
                     else:
                         buttons = [
-                            [{"type": "callback", "text": "✅ Подтвердить всё", "payload": f"confirm_all:{trip_id}"}],
-                            [{"type": "callback", "text": "🚫 Отказаться", "payload": f"reject_start:{trip_id}"}],
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "✅ Подтвердить всё",
+                                    "payload": f"confirm_all:{trip_id}",
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "🚫 Отказаться",
+                                    "payload": f"reject_start:{trip_id}",
+                                }
+                            ],
                         ]
                         await bot.send_message(max_user_id, text, buttons=buttons)
 
@@ -544,7 +629,9 @@ async def max_webhook(request: Request):
                 elif not user or trip.driver_id != user.id:
                     await bot.send_message(max_user_id, "❌ Этот рейс не ваш.")
                 elif trip.date != get_active_date():
-                    await bot.send_message(max_user_id, "❌ Рейс неактуален. Действия недоступны.")
+                    await bot.send_message(
+                        max_user_id, "❌ Рейс неактуален. Действия недоступны."
+                    )
                 elif trip.status == TripStatus.CONFIRMED:
                     await bot.send_message(max_user_id, "✅ Рейс уже подтверждён.")
                 elif trip.status == TripStatus.REJECTED:
@@ -568,9 +655,13 @@ async def max_webhook(request: Request):
                 elif not user or trip.driver_id != user.id:
                     await bot.send_message(max_user_id, "❌ Этот рейс не ваш.")
                 elif trip.date != get_active_date():
-                    await bot.send_message(max_user_id, "❌ Рейс неактуален. Действия недоступны.")
+                    await bot.send_message(
+                        max_user_id, "❌ Рейс неактуален. Действия недоступны."
+                    )
                 elif trip.status in (TripStatus.REJECTED, TripStatus.CONFIRMED):
-                    await bot.send_message(max_user_id, "❌ Рейс уже обработан — отказ невозможен.")
+                    await bot.send_message(
+                        max_user_id, "❌ Рейс уже обработан — отказ невозможен."
+                    )
                 else:
                     trip_date = trip.date.strftime("%d.%m.%Y")
                     await bot.send_message(
@@ -578,9 +669,27 @@ async def max_webhook(request: Request):
                         f"🚫 <b>Отказ от рейса на {trip_date}</b>\n\n"
                         "Как отказаться?",
                         buttons=[
-                            [{"type": "callback", "text": "🚫 От всего", "payload": f"reject_scope:trip:{trip_id}"}],
-                            [{"type": "callback", "text": "✏️ Частично", "payload": f"reject_scope:partial:{trip_id}"}],
-                            [{"type": "callback", "text": "← Назад", "payload": f"view_trip:{trip_id}"}],
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "🚫 От всего",
+                                    "payload": f"reject_scope:trip:{trip_id}",
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "✏️ Частично",
+                                    "payload": f"reject_scope:partial:{trip_id}",
+                                }
+                            ],
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "← Назад",
+                                    "payload": f"view_trip:{trip_id}",
+                                }
+                            ],
                         ],
                     )
 
@@ -601,22 +710,28 @@ async def max_webhook(request: Request):
                         await clear_draft(max_user_id)
                         await bot.send_message(
                             max_user_id,
-                            "❌ <b>Рейс отклонён.</b>\n\n"
-                            "Логист увидит ваш отказ.",
+                            "❌ <b>Рейс отклонён.</b>\n\n" "Логист увидит ваш отказ.",
                         )
                     else:
                         buttons = [
-                            [{
-                                "type": "callback",
-                                "text": r.text,
-                                "payload": f"reject_reason:trip:{trip_id}:{r.id}",
-                            }]
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": r.text,
+                                    "payload": f"reject_reason:trip:{trip_id}:{r.id}",
+                                }
+                            ]
                             for r in reasons
                         ]
-                        buttons.append([
-                            {"type": "callback", "text": "← Назад",
-                             "payload": f"reject_start:{trip_id}"}
-                        ])
+                        buttons.append(
+                            [
+                                {
+                                    "type": "callback",
+                                    "text": "← Назад",
+                                    "payload": f"reject_start:{trip_id}",
+                                }
+                            ]
+                        )
                         await bot.send_message(
                             max_user_id,
                             "🚫 <b>Укажите причину отказа:</b>",
@@ -637,7 +752,9 @@ async def max_webhook(request: Request):
                 else:
                     async with AsyncSessionLocal() as db:
                         result = await db.execute(
-                            select(RejectionReason).where(RejectionReason.id == reason_id)
+                            select(RejectionReason).where(
+                                RejectionReason.id == reason_id
+                            )
                         )
                         reason = result.scalar_one_or_none()
 
@@ -737,17 +854,24 @@ async def max_webhook(request: Request):
                         else:
                             route_name = route.name or f"Маршрут #{route.order_number}"
                             buttons = [
-                                [{
-                                    "type": "callback",
-                                    "text": r.text,
-                                    "payload": f"reject_reason:route:{trip_id}:{route_id}:{r.id}",
-                                }]
+                                [
+                                    {
+                                        "type": "callback",
+                                        "text": r.text,
+                                        "payload": f"reject_reason:route:{trip_id}:{route_id}:{r.id}",
+                                    }
+                                ]
                                 for r in reasons
                             ]
-                            buttons.append([
-                                {"type": "callback", "text": "← Назад",
-                                 "payload": f"reject_scope:partial:{trip_id}"}
-                            ])
+                            buttons.append(
+                                [
+                                    {
+                                        "type": "callback",
+                                        "text": "← Назад",
+                                        "payload": f"reject_scope:partial:{trip_id}",
+                                    }
+                                ]
+                            )
                             await bot.send_message(
                                 max_user_id,
                                 f"🚫 <b>Причина отказа для «{route_name}»:</b>",
@@ -769,7 +893,9 @@ async def max_webhook(request: Request):
                 else:
                     async with AsyncSessionLocal() as db:
                         result = await db.execute(
-                            select(RejectionReason).where(RejectionReason.id == reason_id)
+                            select(RejectionReason).where(
+                                RejectionReason.id == reason_id
+                            )
                         )
                         reason = result.scalar_one_or_none()
 
@@ -859,17 +985,24 @@ async def max_webhook(request: Request):
                             await bot.send_message(max_user_id, text, buttons=buttons)
                         else:
                             buttons = [
-                                [{
-                                    "type": "callback",
-                                    "text": r.text,
-                                    "payload": f"reject_reason:point:{trip_id}:{point_id}:{r.id}",
-                                }]
+                                [
+                                    {
+                                        "type": "callback",
+                                        "text": r.text,
+                                        "payload": f"reject_reason:point:{trip_id}:{point_id}:{r.id}",
+                                    }
+                                ]
                                 for r in reasons
                             ]
-                            buttons.append([
-                                {"type": "callback", "text": "← Назад",
-                                 "payload": f"reject_scope:partial_points:{trip_id}"}
-                            ])
+                            buttons.append(
+                                [
+                                    {
+                                        "type": "callback",
+                                        "text": "← Назад",
+                                        "payload": f"reject_scope:partial_points:{trip_id}",
+                                    }
+                                ]
+                            )
                             await bot.send_message(
                                 max_user_id,
                                 f"🚫 <b>Причина отказа для «{point.address}»:</b>",
@@ -891,7 +1024,9 @@ async def max_webhook(request: Request):
                 else:
                     async with AsyncSessionLocal() as db:
                         result = await db.execute(
-                            select(RejectionReason).where(RejectionReason.id == reason_id)
+                            select(RejectionReason).where(
+                                RejectionReason.id == reason_id
+                            )
                         )
                         reason = result.scalar_one_or_none()
 
