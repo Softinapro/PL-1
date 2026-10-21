@@ -73,9 +73,18 @@ body {
 }
 
 .trip-totals {
-    font-size: 14px;
-    color: #555;
+    font-size: 18px;
+    color: #5c1313;
+    /* тёмно-бордовый для светлой темы */
     margin-bottom: 16px;
+    font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+    .trip-totals {
+        color: #ff9999;
+        /* светлый розовый для тёмной темы */
+    }
 }
 
 .route-block {

@@ -103,7 +103,7 @@ function renderTrip(trip) {
                             <span class="icon">${ROUTE_ICONS[route.status] || '—'}</span>
                             <span>${escapeHtml(route.name || `Маршрут #${route.order_number}`)}</span>
                         </div>
-                        <span class="route-stats">${route.points.length} точек, ${weightStr}</span>
+                        <span class="route-stats">точек: ${route.points.length}; ${weightStr}</span>
                         ${selectionMode ? '' : '<span class="route-toggle-icon">▼</span>'}
                     </div>
                     <div class="route-points">
@@ -221,8 +221,8 @@ function updateSelectionUI() {
     const total = routesCount + pointsCount;
 
     let text = 'Выбрано: ';
-    if (routesCount > 0) text += `${routesCount} маршр., `;
-    if (pointsCount > 0) text += `${pointsCount} точек, `;
+    if (routesCount > 0) text += `маршр: ${routesCount} `;
+    if (pointsCount > 0) text += `точек: ${pointsCount} `;
     if (total === 0) text += '0';
     else text = text.slice(0, -2);
 
