@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
 from typing import List
 
+BUILD_ID = "PL1-CHERNYAEV-2026-10-22-UNIQUE"
+
 
 class Settings(BaseSettings):
     # Database

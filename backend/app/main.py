@@ -21,6 +21,12 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 # ==========================================
 
+# отладка
+logger = logging.getLogger(__name__)
+build_id = getattr(settings, "BUILD_ID", "PL1-CHERNYAEV-2026-10-22-UNIQUE")
+logger.info(f"🚀 PL-1 Build ID: {build_id}")
+# ==========================================
+
 app = FastAPI(
     title="Logistics API",
     version="1.0.0",
@@ -42,6 +48,16 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "logistics-api"}
+
+
+#
+@app.get("/api/v1/_build")
+async def get_build_info():
+    build_id = getattr(settings, "BUILD_ID", "PL1-CHERNYAEV-2026-10-22-UNIQUE")
+    return {"build_id": build_id, "app": "PL-1"}
+
+
+# ==========================================================
 
 
 # Подключаем API
